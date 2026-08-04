@@ -1,110 +1,90 @@
 # Download Ephemera
 
-## Linux x86_64 — ready now
+## Get a build
 
-From [release v0.1.0](https://github.com/ManasesLovera/ephemera/releases/tag/v0.1.0):
+**→ [github.com/ManasesLovera/ephemera/releases](https://github.com/ManasesLovera/ephemera/releases)**
 
-| File | Use it if… |
-| --- | --- |
-| [`Ephemera_0.1.0_amd64.AppImage`](https://github.com/ManasesLovera/ephemera/releases/download/v0.1.0/Ephemera_0.1.0_amd64.AppImage) | You want it to just run, on **any** distro — bundles its own runtime, no install needed |
-| [`Ephemera_0.1.0_amd64.deb`](https://github.com/ManasesLovera/ephemera/releases/download/v0.1.0/Ephemera_0.1.0_amd64.deb) | You're on Debian, Ubuntu, or a derivative and want it in your package manager |
-| [`Ephemera-0.1.0-1.x86_64.rpm`](https://github.com/ManasesLovera/ephemera/releases/download/v0.1.0/Ephemera-0.1.0-1.x86_64.rpm) | You're on Fedora, openSUSE, RHEL, or a derivative |
+Every tagged release lists its own binaries under **Assets** — the top of that page is
+always the latest version; older tags stay listed below it if you need a previous one.
+Every push to `main` also runs the full test suite and a from-scratch build on every
+platform via CI, so `main` itself is always known-buildable even between tags — see
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) and
+[`.github/workflows/release.yml`](.github/workflows/release.yml).
 
-**AppImage:**
+### Which file to pick
 
-```bash
-chmod +x Ephemera_0.1.0_amd64.AppImage
-./Ephemera_0.1.0_amd64.AppImage
-```
+Asset names encode the platform and architecture. On a release's Assets list, look for:
 
-**.deb** (Debian/Ubuntu/Mint/Pop!_OS):
-
-```bash
-sudo apt install ./Ephemera_0.1.0_amd64.deb
-```
-
-**.rpm** (Fedora/openSUSE/RHEL):
-
-```bash
-sudo rpm -i Ephemera-0.1.0-1.x86_64.rpm
-# or on dnf-based systems:
-sudo dnf install ./Ephemera-0.1.0-1.x86_64.rpm
-```
+| Your system | File pattern | Notes |
+| --- | --- | --- |
+| Linux x86_64, any distro | `*_amd64.AppImage` | Bundles its own runtime — works everywhere, nothing to install |
+| Debian / Ubuntu / Mint / Pop!_OS | `*_amd64.deb` | `sudo apt install ./<file>.deb` |
+| Fedora / openSUSE / RHEL | `*.x86_64.rpm` | `sudo rpm -i <file>.rpm` or `sudo dnf install ./<file>.rpm` |
+| Linux arm64 | *(not currently produced — see below)* | Build from source |
+| Windows x64 | `*_x64-setup.exe` or `*_x64_en-US.msi` | Either installs the same app; `.msi` if your org manages installs via Group Policy |
+| macOS Apple Silicon (M1/M2/M3/M4) | `*_aarch64.dmg` | |
+| macOS Intel | `*_x64.dmg` | |
 
 > [!note]
-> The `.deb` was built against this build machine's `webkit2gtk-4.1`/`libsoup-3.0`.
-> If your distro is old enough not to have those (anything much older than Ubuntu
-> 24.04/Debian 13-equivalent), the `.deb`/`.rpm` may fail to install on dependency
-> resolution — reach for the **AppImage** instead, or build from source below.
+> The Linux `arm64` leg of the release build is currently failing in CI
+> (`ubuntu-24.04-arm`, `pnpm tauri build` exits non-zero) and no arm64 Linux asset is
+> published yet. Every other platform above — Linux x86_64, Windows x64, macOS
+> (both architectures) — has built successfully on every release since v0.2.0. If
+> you're on Linux arm64, use the build-from-source steps below in the meantime.
 
-## Not yet built: Windows, macOS, Linux arm64
+> [!note]
+> The `.deb`/`.rpm` are built against a current Ubuntu runner's `webkit2gtk-4.1` /
+> `libsoup-3.0`. On a distro old enough not to have those, package install may fail on
+> dependency resolution — the AppImage has no such dependency and is the safer default
+> on Linux if you're unsure.
 
-Nobody has run this on those platforms yet — no CPU architecture or OS beyond Linux
-x86_64 has a binary in this repo right now. There are two ways to get one:
+## Build it yourself
 
-### Option A — wait for the next tagged release
+Needed regardless of platform:
 
-[`.github/workflows/release.yml`](.github/workflows/release.yml) builds all of the
-following automatically whenever a `v*` tag is pushed, and attaches them to that
-release: Linux x86_64, Linux arm64, Windows x86_64, macOS Apple Silicon, macOS Intel.
-v0.1.0 predates this workflow — check the
-[releases page](https://github.com/ManasesLovera/ephemera/releases) for anything
-tagged v0.2.0 or later.
+- **[Rust](https://rustup.rs/)** (installs `cargo`, which does the actual compiling)
+- **[Node.js](https://nodejs.org/)** LTS
+- **[pnpm](https://pnpm.io/installation)** (`npm install -g pnpm`)
 
-### Option B — build it yourself right now
-
-Same steps on every platform; only the prerequisite install differs.
-
-#### Windows
-
-1. Install [Rust](https://rustup.rs/), [Node.js LTS](https://nodejs.org/), and
-   `pnpm` (`npm install -g pnpm`).
-2. Install the **WebView2** runtime — already present on Windows 11 and current
-   Windows 10; if missing, get it from
-   [Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/).
-3. Install the **Visual Studio Build Tools** (C++ build tools workload) — required
-   for linking the Rust binary on Windows.
-4. Then:
-
-   ```powershell
-   git clone https://github.com/ManasesLovera/ephemera.git
-   cd ephemera
-   pnpm install
-   pnpm tauri build
-   ```
-
-   Output: `src-tauri\target\release\bundle\msi\*.msi` and
-   `src-tauri\target\release\bundle\nsis\*.exe`.
-
-#### macOS
-
-1. Install [Rust](https://rustup.rs/), [Node.js LTS](https://nodejs.org/), `pnpm`,
-   and Xcode Command Line Tools (`xcode-select --install`).
-2. Then:
-
-   ```bash
-   git clone https://github.com/ManasesLovera/ephemera.git
-   cd ephemera
-   pnpm install
-   pnpm tauri build
-   ```
-
-   Output: `src-tauri/target/release/bundle/dmg/*.dmg` and
-   `src-tauri/target/release/bundle/macos/*.app`.
-
-   Building for the *other* Mac architecture than the one you're on (e.g. building
-   an Intel binary on Apple Silicon) needs the target installed first:
-   `rustup target add x86_64-apple-darwin`, then
-   `pnpm tauri build --target x86_64-apple-darwin`.
-
-#### Linux — any distro, any architecture (including arm64)
+Then, on every platform:
 
 ```bash
 git clone https://github.com/ManasesLovera/ephemera.git
 cd ephemera
+pnpm install
+pnpm tauri build
 ```
 
-Install build dependencies (Debian/Ubuntu shown; see
+`pnpm tauri build` runs the frontend build via Vite and the Rust build via
+`cargo build --release` in sequence, then packages whatever your OS produces. Platform
+specifics:
+
+#### Windows
+
+Also needs the **WebView2 runtime** (already present on Windows 11 and current
+Windows 10; otherwise grab it from
+[Microsoft's WebView2 page](https://developer.microsoft.com/microsoft-edge/webview2/))
+and the **Visual Studio Build Tools** (C++ build tools workload, needed to link the
+Rust binary).
+
+Output: `src-tauri\target\release\bundle\msi\*.msi` and
+`src-tauri\target\release\bundle\nsis\*.exe`.
+
+#### macOS
+
+Also needs Xcode Command Line Tools: `xcode-select --install`.
+
+Output: `src-tauri/target/release/bundle/dmg/*.dmg` and
+`src-tauri/target/release/bundle/macos/*.app`.
+
+To build for the *other* Mac architecture than the one you're on (e.g. an Intel binary
+built on Apple Silicon), add the target first:
+`rustup target add x86_64-apple-darwin`, then
+`pnpm tauri build --target x86_64-apple-darwin`.
+
+#### Linux — any distro, any architecture (including arm64)
+
+Also needs the Tauri Linux build dependencies first (Debian/Ubuntu shown — see
 [Tauri's Linux prerequisites](https://v2.tauri.app/start/prerequisites/) for other
 package managers):
 
@@ -114,19 +94,11 @@ sudo apt install -y libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev \
   libayatana-appindicator3-dev
 ```
 
-Then:
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh   # if Rust isn't installed
-npm install -g pnpm                                              # if pnpm isn't installed
-pnpm install
-pnpm tauri build
-```
-
-Output in `src-tauri/target/release/bundle/{appimage,deb,rpm}/`. This is the same
-process whether you're on x86_64 or arm64 — Cargo and the Tauri CLI build for
-whatever architecture they're run on natively; no cross-compilation setup needed if
-you're building on the target machine itself.
+Output in `src-tauri/target/release/bundle/{appimage,deb,rpm}/`. Cargo and the Tauri
+CLI build for whatever architecture they're run on natively, so this is the same
+process on x86_64 or arm64 — no cross-compilation setup needed when building on the
+target machine itself. This is currently the only way to get an arm64 Linux build (see
+the CI note above).
 
 ## What each build needs at runtime
 
@@ -143,7 +115,7 @@ Regardless of how you got the binary:
 
 ## Verifying what you downloaded
 
-Every release binary is built by the GitHub Actions workflows in this repo
-([`ci.yml`](.github/workflows/ci.yml) / [`release.yml`](.github/workflows/release.yml))
-directly from a tagged commit — you can always audit exactly what went into any release
-by checking out that tag and reading the source, rather than trusting the binary alone.
+Every release binary is built directly from a tagged commit by the GitHub Actions
+workflows in this repo — you can always audit exactly what went into any release by
+checking out that tag (`git checkout v0.2.0`, etc.) and reading the source, rather than
+trusting the binary alone.
