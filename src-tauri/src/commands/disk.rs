@@ -9,10 +9,15 @@ use tauri::State;
 /// allocation) and releases the RAM lock before the write, so the app stays
 /// responsive and the "a reference is not a copy" teaching point holds for real.
 #[tauri::command]
-pub fn persist_to_disk(state: State<'_, Arc<AppState>>, id: String) -> Result<TransferResult, AppError> {
+pub fn persist_to_disk(
+    state: State<'_, Arc<AppState>>,
+    id: String,
+) -> Result<TransferResult, AppError> {
     let (meta, bytes) = {
         let ram = state.ram.lock().unwrap();
-        let file = ram.get(&id).ok_or_else(|| AppError::NotFound { id: id.clone() })?;
+        let file = ram
+            .get(&id)
+            .ok_or_else(|| AppError::NotFound { id: id.clone() })?;
         (file.meta.clone(), file.bytes.clone())
     };
 
@@ -31,7 +36,11 @@ pub fn persist_to_disk(state: State<'_, Arc<AppState>>, id: String) -> Result<Tr
     f.sync_all()?;
 
     let final_name = dest.file_name().unwrap().to_string_lossy().to_string();
-    let disk_meta = FileMeta { name: final_name, origin: Origin::Ram, ..meta.clone() };
+    let disk_meta = FileMeta {
+        name: final_name,
+        origin: Origin::Ram,
+        ..meta.clone()
+    };
     state.vault.lock().unwrap().register(disk_meta);
 
     let elapsed_ms = started.elapsed().as_millis() as u64;
@@ -40,7 +49,12 @@ pub fn persist_to_disk(state: State<'_, Arc<AppState>>, id: String) -> Result<Tr
     } else {
         0.0
     };
-    Ok(TransferResult { id, bytes: meta.size, elapsed_ms, throughput_mb_s })
+    Ok(TransferResult {
+        id,
+        bytes: meta.size,
+        elapsed_ms,
+        throughput_mb_s,
+    })
 }
 
 #[tauri::command]
@@ -61,11 +75,16 @@ pub fn delete_from_disk(state: State<'_, Arc<AppState>>, id: String) -> Result<(
 }
 
 #[tauri::command]
-pub fn reveal_vault(state: State<'_, Arc<AppState>>, app: tauri::AppHandle) -> Result<(), AppError> {
+pub fn reveal_vault(
+    state: State<'_, Arc<AppState>>,
+    app: tauri::AppHandle,
+) -> Result<(), AppError> {
     let root = state.vault.lock().unwrap().root().to_path_buf();
     use tauri_plugin_opener::OpenerExt;
     app.opener()
         .reveal_item_in_dir(root)
-        .map_err(|e| AppError::Io { message: e.to_string() })?;
+        .map_err(|e| AppError::Io {
+            message: e.to_string(),
+        })?;
     Ok(())
 }

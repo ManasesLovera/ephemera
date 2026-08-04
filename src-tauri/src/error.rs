@@ -33,19 +33,26 @@ pub enum AppError {
 
 impl From<std::io::Error> for AppError {
     fn from(e: std::io::Error) -> Self {
-        AppError::Io { message: e.to_string() }
+        AppError::Io {
+            message: e.to_string(),
+        }
     }
 }
 
 impl From<sqlx::Error> for AppError {
     fn from(e: sqlx::Error) -> Self {
-        AppError::DbUnavailable { message: e.to_string() }
+        AppError::DbUnavailable {
+            message: e.to_string(),
+        }
     }
 }
 
 pub fn assert_fits(current: u64, incoming: u64, cap: u64) -> Result<(), AppError> {
     if incoming > cap {
-        return Err(AppError::FileTooLarge { size: incoming, cap });
+        return Err(AppError::FileTooLarge {
+            size: incoming,
+            cap,
+        });
     }
     if current + incoming > cap {
         return Err(AppError::QuotaExceeded {
@@ -55,4 +62,45 @@ pub fn assert_fits(current: u64, incoming: u64, cap: u64) -> Result<(), AppError
         });
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fits_within_cap() {
+        assert!(assert_fits(0, 5, 10).is_ok());
+        assert!(assert_fits(5, 5, 10).is_ok());
+    }
+
+    #[test]
+    fn single_file_over_cap_is_file_too_large() {
+        let err = assert_fits(0, 11, 10).unwrap_err();
+        match err {
+            AppError::FileTooLarge { size, cap } => {
+                assert_eq!(size, 11);
+                assert_eq!(cap, 10);
+            }
+            other => panic!("expected FileTooLarge, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn quota_exceeded_reports_exact_deficit() {
+        let err = assert_fits(8, 5, 10).unwrap_err();
+        match err {
+            AppError::QuotaExceeded { needed, free, cap } => {
+                assert_eq!(needed, 3);
+                assert_eq!(free, 2);
+                assert_eq!(cap, 10);
+            }
+            other => panic!("expected QuotaExceeded, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn exact_fit_is_ok() {
+        assert!(assert_fits(7, 3, 10).is_ok());
+    }
 }

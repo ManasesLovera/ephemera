@@ -5,23 +5,42 @@ use std::sync::Arc;
 use tauri::State;
 
 #[tauri::command]
-pub async fn save_to_db(state: State<'_, Arc<AppState>>, id: String, source: String) -> Result<DbFile, AppError> {
+pub async fn save_to_db(
+    state: State<'_, Arc<AppState>>,
+    id: String,
+    source: String,
+) -> Result<DbFile, AppError> {
     let (meta, bytes): (FileMeta, Vec<u8>) = match source.as_str() {
         "ram" => {
             let ram = state.ram.lock().unwrap();
-            let f = ram.get(&id).ok_or_else(|| AppError::NotFound { id: id.clone() })?;
+            let f = ram
+                .get(&id)
+                .ok_or_else(|| AppError::NotFound { id: id.clone() })?;
             (f.meta.clone(), f.bytes.to_vec())
         }
         "disk" => {
             let path = state.vault.lock().unwrap().get_path(&id)?;
             let bytes = std::fs::read(&path)?;
             let vault = state.vault.lock().unwrap();
-            let meta = vault.list().into_iter().find(|f| f.meta.id == id).map(|f| f.meta).ok_or_else(|| AppError::NotFound { id: id.clone() })?;
+            let meta = vault
+                .list()
+                .into_iter()
+                .find(|f| f.meta.id == id)
+                .map(|f| f.meta)
+                .ok_or_else(|| AppError::NotFound { id: id.clone() })?;
             (meta, bytes)
         }
-        _ => return Err(AppError::BadRequest { message: "source must be 'ram' or 'disk'".into() }),
+        _ => {
+            return Err(AppError::BadRequest {
+                message: "source must be 'ram' or 'disk'".into(),
+            })
+        }
     };
-    let origin = if source == "ram" { Origin::Ram } else { Origin::Disk };
+    let origin = if source == "ram" {
+        Origin::Ram
+    } else {
+        Origin::Disk
+    };
     state.db.insert(&meta, &bytes, origin).await
 }
 

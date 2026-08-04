@@ -1,21 +1,22 @@
 use crate::error::AppError;
 use crate::metrics::sample_rss_now;
-use crate::types::{
-    Direction, StreamReport, TransferProgress, MAX_RAM_BYTES, STREAM_CHUNK_BYTES,
-};
+use crate::types::{Direction, StreamReport, TransferProgress, MAX_RAM_BYTES, STREAM_CHUNK_BYTES};
 use std::io::{Read, Write};
 use std::path::Path;
 use std::time::Instant;
-use tauri::ipc::Channel;
 
 /// Reads `source` in fixed-size chunks and writes each directly to `dest`, never
 /// holding more than one chunk in memory. Peak memory attributable to this operation
 /// is `STREAM_CHUNK_BYTES` regardless of file size — that invariant is the whole point.
+///
+/// `on_progress` is a plain callback (not `tauri::ipc::Channel` directly) so this
+/// function is testable without a running Tauri app — the command wrapper adapts a
+/// real `Channel` to this signature.
 pub fn stream_copy(
     source: &Path,
     dest: &Path,
     file_id: String,
-    on_progress: &Channel<TransferProgress>,
+    mut on_progress: impl FnMut(TransferProgress),
 ) -> Result<StreamReport, AppError> {
     let mut src = std::fs::File::open(source)?;
     let total = src.metadata()?.len();
@@ -42,7 +43,7 @@ pub fn stream_copy(
         rss_sum += rss_now as u128;
         rss_samples += 1;
 
-        let _ = on_progress.send(TransferProgress {
+        on_progress(TransferProgress {
             id: file_id.clone(),
             direction: Direction::StreamToDisk,
             bytes_done: done,
@@ -59,14 +60,21 @@ pub fn stream_copy(
     } else {
         0.0
     };
-    let rss_avg = if rss_samples > 0 { (rss_sum / rss_samples as u128) as u64 } else { rss_baseline };
+    let rss_avg = if rss_samples > 0 {
+        (rss_sum / rss_samples as u128) as u64
+    } else {
+        rss_baseline
+    };
 
     let chunk = STREAM_CHUNK_BYTES as u64;
     let max_concurrent_streaming = (MAX_RAM_BYTES / chunk).max(1);
-    let max_concurrent_buffered = if total > 0 { (MAX_RAM_BYTES / total).max(0) } else { 0 };
+    let max_concurrent_buffered = MAX_RAM_BYTES.checked_div(total).unwrap_or(0);
 
     Ok(StreamReport {
-        file_name: source.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default(),
+        file_name: source
+            .file_name()
+            .map(|n| n.to_string_lossy().to_string())
+            .unwrap_or_default(),
         bytes_total: total,
         chunk_size: chunk,
         elapsed_ms,
@@ -79,4 +87,60 @@ pub fn stream_copy(
         max_concurrent_streaming,
         max_concurrent_buffered,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn copies_bytes_exactly_and_reports_correct_total() {
+        let dir = tempfile::tempdir().unwrap();
+        let src_path = dir.path().join("source.bin");
+        // Larger than one chunk so the loop actually iterates more than once.
+        let payload = vec![0x42u8; STREAM_CHUNK_BYTES * 3 + 12345];
+        std::fs::write(&src_path, &payload).unwrap();
+        let dst_path = dir.path().join("dest.bin");
+
+        let mut progress_calls = 0u32;
+        let report =
+            stream_copy(&src_path, &dst_path, "id-1".into(), |_| progress_calls += 1).unwrap();
+
+        let written = std::fs::read(&dst_path).unwrap();
+        assert_eq!(written, payload);
+        assert_eq!(report.bytes_total, payload.len() as u64);
+        assert_eq!(report.buffered_equivalent_peak_bytes, payload.len() as u64);
+        assert_eq!(report.chunk_size, STREAM_CHUNK_BYTES as u64);
+        assert!(
+            progress_calls >= 4,
+            "expected at least 4 chunks, got {progress_calls} progress calls"
+        );
+    }
+
+    #[test]
+    fn concurrency_math_matches_the_documented_formula() {
+        let dir = tempfile::tempdir().unwrap();
+        let src_path = dir.path().join("source.bin");
+        std::fs::write(&src_path, vec![0u8; 8 * 1024 * 1024]).unwrap(); // 8 MB
+        let dst_path = dir.path().join("dest.bin");
+
+        let report = stream_copy(&src_path, &dst_path, "id-2".into(), |_| {}).unwrap();
+
+        // floor(10MB / 256KB) = 40
+        assert_eq!(report.max_concurrent_streaming, 40);
+        // floor(10MB / 8MB) = 1
+        assert_eq!(report.max_concurrent_buffered, 1);
+    }
+
+    #[test]
+    fn empty_file_streams_without_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let src_path = dir.path().join("empty.bin");
+        std::fs::write(&src_path, []).unwrap();
+        let dst_path = dir.path().join("dest.bin");
+
+        let report = stream_copy(&src_path, &dst_path, "id-3".into(), |_| {}).unwrap();
+        assert_eq!(report.bytes_total, 0);
+        assert_eq!(std::fs::read(&dst_path).unwrap().len(), 0);
+    }
 }

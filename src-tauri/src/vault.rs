@@ -35,7 +35,10 @@ fn unique_dest(root: &Path, name: &str) -> PathBuf {
     if !candidate.exists() {
         return candidate;
     }
-    let stem = Path::new(name).file_stem().and_then(|s| s.to_str()).unwrap_or(name);
+    let stem = Path::new(name)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(name);
     let ext = Path::new(name).extension().and_then(|s| s.to_str());
     for n in 2..10_000 {
         let new_name = match ext {
@@ -53,7 +56,10 @@ fn unique_dest(root: &Path, name: &str) -> PathBuf {
 impl Vault {
     pub fn open(root: PathBuf) -> Result<Self, AppError> {
         std::fs::create_dir_all(&root)?;
-        let mut v = Self { root, index: IndexMap::new() };
+        let mut v = Self {
+            root,
+            index: IndexMap::new(),
+        };
         v.rescan()?;
         Ok(v)
     }
@@ -66,7 +72,10 @@ impl Vault {
     pub fn resolve_safe(&self, name: &str) -> Result<PathBuf, AppError> {
         let safe_name = sanitize_filename(name)?;
         let candidate = self.root.join(&safe_name);
-        let canon_root = self.root.canonicalize().unwrap_or_else(|_| self.root.clone());
+        let canon_root = self
+            .root
+            .canonicalize()
+            .unwrap_or_else(|_| self.root.clone());
         // The candidate does not exist yet in the "write new file" case, so canonicalize its parent.
         let parent_canon = candidate
             .parent()
@@ -98,11 +107,20 @@ impl Vault {
     }
 
     pub fn register(&mut self, meta: FileMeta) {
-        self.index.insert(meta.id.clone(), DiskFile { meta, persisted_at: now_millis() });
+        self.index.insert(
+            meta.id.clone(),
+            DiskFile {
+                meta,
+                persisted_at: now_millis(),
+            },
+        );
     }
 
     pub fn remove(&mut self, id: &str) -> Result<(), AppError> {
-        let entry = self.index.shift_remove(id).ok_or_else(|| AppError::NotFound { id: id.to_string() })?;
+        let entry = self
+            .index
+            .shift_remove(id)
+            .ok_or_else(|| AppError::NotFound { id: id.to_string() })?;
         let path = self.root.join(&entry.meta.name);
         if path.exists() {
             std::fs::remove_file(path)?;
@@ -111,7 +129,10 @@ impl Vault {
     }
 
     pub fn get_path(&self, id: &str) -> Result<PathBuf, AppError> {
-        let entry = self.index.get(id).ok_or_else(|| AppError::NotFound { id: id.to_string() })?;
+        let entry = self
+            .index
+            .get(id)
+            .ok_or_else(|| AppError::NotFound { id: id.to_string() })?;
         Ok(self.root.join(&entry.meta.name))
     }
 
@@ -137,16 +158,99 @@ impl Vault {
                 Some(f) => (f.meta.id.clone(), f.meta.created_at, f.persisted_at),
                 None => (uuid::Uuid::new_v4().to_string(), now_millis(), now_millis()),
             };
-            let mime = mime_guess::from_path(&name).first_or_octet_stream().to_string();
+            let mime = mime_guess::from_path(&name)
+                .first_or_octet_stream()
+                .to_string();
             fresh.insert(
                 id.clone(),
                 DiskFile {
-                    meta: FileMeta { id, name, size, mime, created_at, origin: Origin::Disk },
+                    meta: FileMeta {
+                        id,
+                        name,
+                        size,
+                        mime,
+                        created_at,
+                        origin: Origin::Disk,
+                    },
                     persisted_at,
                 },
             );
         }
         self.index = fresh;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_strips_path_separators() {
+        assert_eq!(sanitize_filename("a/b\\c").unwrap(), "abc");
+    }
+
+    #[test]
+    fn sanitize_strips_dot_dot_traversal() {
+        assert_eq!(sanitize_filename("../../etc/passwd").unwrap(), "etcpasswd");
+    }
+
+    #[test]
+    fn sanitize_rejects_empty_result() {
+        assert!(matches!(
+            sanitize_filename("../.."),
+            Err(AppError::InvalidName)
+        ));
+    }
+
+    #[test]
+    fn sanitize_keeps_normal_names() {
+        assert_eq!(sanitize_filename("photo (2).jpg").unwrap(), "photo (2).jpg");
+    }
+
+    #[test]
+    fn write_new_path_stays_inside_root_even_for_traversal_attempt() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault = Vault::open(dir.path().to_path_buf()).unwrap();
+        let path = vault.write_new_path("../../etc/passwd").unwrap();
+        assert!(path.starts_with(dir.path()));
+    }
+
+    #[test]
+    fn unique_dest_avoids_collision() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("a.txt"), b"one").unwrap();
+        let vault = Vault::open(dir.path().to_path_buf()).unwrap();
+        let path = vault.write_new_path("a.txt").unwrap();
+        assert_eq!(path.file_name().unwrap().to_str().unwrap(), "a (2).txt");
+    }
+
+    #[test]
+    fn rescan_reflects_externally_added_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut vault = Vault::open(dir.path().to_path_buf()).unwrap();
+        assert_eq!(vault.total_bytes(), 0);
+        std::fs::write(dir.path().join("external.txt"), b"hello world").unwrap();
+        vault.rescan().unwrap();
+        assert_eq!(vault.total_bytes(), 11);
+        assert_eq!(vault.list().len(), 1);
+    }
+
+    #[test]
+    fn rescan_excludes_hidden_sidecar_files() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut vault = Vault::open(dir.path().to_path_buf()).unwrap();
+        std::fs::write(dir.path().join(".ephemera-index.json"), b"{}").unwrap();
+        vault.rescan().unwrap();
+        assert_eq!(vault.total_bytes(), 0);
+        assert!(vault.list().is_empty());
+    }
+
+    #[test]
+    fn assert_room_for_respects_disk_cap() {
+        let dir = tempfile::tempdir().unwrap();
+        let vault = Vault::open(dir.path().to_path_buf()).unwrap();
+        assert!(vault.assert_room_for(MAX_DISK_BYTES).is_ok());
+        assert!(vault.assert_room_for(MAX_DISK_BYTES + 1).is_err());
     }
 }

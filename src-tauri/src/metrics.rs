@@ -12,7 +12,10 @@ use tauri::{AppHandle, Emitter};
 pub static LAST_RSS_BYTES: AtomicU64 = AtomicU64::new(0);
 
 fn now_millis() -> i64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
 }
 
 /// Sums RSS across the whole process tree rooted at `root_pid`. WebKitGTK forks child

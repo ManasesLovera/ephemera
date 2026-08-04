@@ -45,7 +45,10 @@ pub struct CloudStore {
 }
 
 fn now_millis() -> i64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
 }
 
 impl CloudStore {
@@ -61,7 +64,10 @@ impl CloudStore {
                 },
                 Err(e) => Self::offline(bucket, format!("invalid key file: {e}")),
             },
-            Err(_) => Self::offline(bucket, "no credentials — see docs/09-gcs-tier.md".to_string()),
+            Err(_) => Self::offline(
+                bucket,
+                "no credentials — see docs/09-gcs-tier.md".to_string(),
+            ),
         }
     }
 
@@ -93,9 +99,15 @@ impl CloudStore {
                 return Ok(cached.token.clone());
             }
         }
-        let key = self.key.as_ref().ok_or_else(|| AppError::CloudUnavailable {
-            message: self.offline_reason.clone().unwrap_or_else(|| "not configured".into()),
-        })?;
+        let key = self
+            .key
+            .as_ref()
+            .ok_or_else(|| AppError::CloudUnavailable {
+                message: self
+                    .offline_reason
+                    .clone()
+                    .unwrap_or_else(|| "not configured".into()),
+            })?;
 
         let now = chrono::Utc::now().timestamp();
         let claims = Claims {
@@ -107,9 +119,14 @@ impl CloudStore {
         };
         let header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::RS256);
         let encoding_key = jsonwebtoken::EncodingKey::from_rsa_pem(key.private_key.as_bytes())
-            .map_err(|e| AppError::CloudUnavailable { message: format!("bad private key: {e}") })?;
-        let jwt = jsonwebtoken::encode(&header, &claims, &encoding_key)
-            .map_err(|e| AppError::CloudUnavailable { message: format!("jwt sign failed: {e}") })?;
+            .map_err(|e| AppError::CloudUnavailable {
+                message: format!("bad private key: {e}"),
+            })?;
+        let jwt = jsonwebtoken::encode(&header, &claims, &encoding_key).map_err(|e| {
+            AppError::CloudUnavailable {
+                message: format!("jwt sign failed: {e}"),
+            }
+        })?;
 
         let resp = self
             .client
@@ -120,16 +137,20 @@ impl CloudStore {
             ])
             .send()
             .await
-            .map_err(|e| AppError::CloudUnavailable { message: e.to_string() })?;
+            .map_err(|e| AppError::CloudUnavailable {
+                message: e.to_string(),
+            })?;
 
         if !resp.status().is_success() {
             let body = resp.text().await.unwrap_or_default();
-            return Err(AppError::CloudUnavailable { message: format!("token exchange failed: {body}") });
+            return Err(AppError::CloudUnavailable {
+                message: format!("token exchange failed: {body}"),
+            });
         }
-        let token_resp: TokenResponse = resp
-            .json()
-            .await
-            .map_err(|e| AppError::CloudUnavailable { message: e.to_string() })?;
+        let token_resp: TokenResponse =
+            resp.json().await.map_err(|e| AppError::CloudUnavailable {
+                message: e.to_string(),
+            })?;
 
         *self.token.write().unwrap() = Some(CachedToken {
             token: token_resp.access_token.clone(),
@@ -141,7 +162,10 @@ impl CloudStore {
 
     pub async fn bytes_used(&self) -> Result<u64, AppError> {
         let objects = self.list_raw().await?;
-        Ok(objects.iter().map(|o| o.size.parse::<u64>().unwrap_or(0)).sum())
+        Ok(objects
+            .iter()
+            .map(|o| o.size.parse::<u64>().unwrap_or(0))
+            .sum())
     }
 
     async fn list_raw(&self) -> Result<Vec<GcsObject>, AppError> {
@@ -149,21 +173,25 @@ impl CloudStore {
             return Ok(vec![]);
         }
         let token = self.access_token().await?;
-        let url = format!("https://storage.googleapis.com/storage/v1/b/{}/o", self.bucket);
+        let url = format!(
+            "https://storage.googleapis.com/storage/v1/b/{}/o",
+            self.bucket
+        );
         let resp = self
             .client
             .get(&url)
             .bearer_auth(token)
             .send()
             .await
-            .map_err(|e| AppError::CloudUnavailable { message: e.to_string() })?;
+            .map_err(|e| AppError::CloudUnavailable {
+                message: e.to_string(),
+            })?;
         if resp.status() == reqwest::StatusCode::NOT_FOUND {
             return Ok(vec![]);
         }
-        let listing: GcsListing = resp
-            .json()
-            .await
-            .map_err(|e| AppError::CloudUnavailable { message: e.to_string() })?;
+        let listing: GcsListing = resp.json().await.map_err(|e| AppError::CloudUnavailable {
+            message: e.to_string(),
+        })?;
         Ok(listing.items.unwrap_or_default())
     }
 
@@ -204,12 +232,20 @@ impl CloudStore {
             .body(bytes)
             .send()
             .await
-            .map_err(|e| AppError::CloudUnavailable { message: e.to_string() })?;
+            .map_err(|e| AppError::CloudUnavailable {
+                message: e.to_string(),
+            })?;
         if !resp.status().is_success() {
             let body = resp.text().await.unwrap_or_default();
-            return Err(AppError::CloudUnavailable { message: format!("upload failed: {body}") });
+            return Err(AppError::CloudUnavailable {
+                message: format!("upload failed: {body}"),
+            });
         }
-        Ok(CloudFile { meta: meta.clone(), saved_at: now_millis(), object_name })
+        Ok(CloudFile {
+            meta: meta.clone(),
+            saved_at: now_millis(),
+            object_name,
+        })
     }
 
     pub async fn remove(&self, object_name: &FileId) -> Result<(), AppError> {
@@ -224,7 +260,9 @@ impl CloudStore {
             .bearer_auth(token)
             .send()
             .await
-            .map_err(|e| AppError::CloudUnavailable { message: e.to_string() })?;
+            .map_err(|e| AppError::CloudUnavailable {
+                message: e.to_string(),
+            })?;
         Ok(())
     }
 }
@@ -246,7 +284,9 @@ mod urlencoding {
     pub fn encode(s: &str) -> String {
         s.bytes()
             .map(|b| match b {
-                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => (b as char).to_string(),
+                b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                    (b as char).to_string()
+                }
                 _ => format!("%{:02X}", b),
             })
             .collect()

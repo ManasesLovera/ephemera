@@ -39,7 +39,10 @@ impl AppState {
     }
 
     pub fn db_usage_cached(&self) -> (u64, u64) {
-        (self.db_logical_cached.load(Ordering::Relaxed), self.db_physical_cached.load(Ordering::Relaxed))
+        (
+            self.db_logical_cached.load(Ordering::Relaxed),
+            self.db_physical_cached.load(Ordering::Relaxed),
+        )
     }
 
     pub fn cloud_usage_cached(&self) -> u64 {

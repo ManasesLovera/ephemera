@@ -5,7 +5,10 @@ use sqlx::{PgPool, Row};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn now_millis() -> i64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as i64).unwrap_or(0)
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
 }
 
 pub struct DbStore {
@@ -15,14 +18,28 @@ pub struct DbStore {
 
 impl DbStore {
     pub async fn connect(url: &str) -> Self {
-        match PgPoolOptions::new().max_connections(5).acquire_timeout(std::time::Duration::from_secs(3)).connect(url).await {
+        match PgPoolOptions::new()
+            .max_connections(5)
+            .acquire_timeout(std::time::Duration::from_secs(3))
+            .connect(url)
+            .await
+        {
             Ok(pool) => {
                 if let Err(e) = sqlx::migrate!("./migrations").run(&pool).await {
-                    return Self { pool: None, offline_reason: Some(format!("migration failed: {e}")) };
+                    return Self {
+                        pool: None,
+                        offline_reason: Some(format!("migration failed: {e}")),
+                    };
                 }
-                Self { pool: Some(pool), offline_reason: None }
+                Self {
+                    pool: Some(pool),
+                    offline_reason: None,
+                }
             }
-            Err(e) => Self { pool: None, offline_reason: Some(e.to_string()) },
+            Err(e) => Self {
+                pool: None,
+                offline_reason: Some(e.to_string()),
+            },
         }
     }
 
@@ -36,7 +53,10 @@ impl DbStore {
 
     fn pool(&self) -> Result<&PgPool, AppError> {
         self.pool.as_ref().ok_or_else(|| AppError::DbUnavailable {
-            message: self.offline_reason.clone().unwrap_or_else(|| "not connected — run `docker compose up -d`".into()),
+            message: self
+                .offline_reason
+                .clone()
+                .unwrap_or_else(|| "not connected — run `docker compose up -d`".into()),
         })
     }
 
@@ -56,7 +76,12 @@ impl DbStore {
         Ok(row.try_get::<i64, _>("total").unwrap_or(0).max(0) as u64)
     }
 
-    pub async fn insert(&self, meta: &FileMeta, bytes: &[u8], origin: Origin) -> Result<DbFile, AppError> {
+    pub async fn insert(
+        &self,
+        meta: &FileMeta,
+        bytes: &[u8],
+        origin: Origin,
+    ) -> Result<DbFile, AppError> {
         let pool = self.pool()?;
         let current = self.logical_bytes().await.unwrap_or(0);
         assert_fits(current, meta.size, MAX_DB_BYTES)?;
@@ -76,7 +101,10 @@ impl DbStore {
         .bind(origin_str)
         .execute(pool)
         .await?;
-        Ok(DbFile { meta: meta.clone(), saved_at: now_millis() })
+        Ok(DbFile {
+            meta: meta.clone(),
+            saved_at: now_millis(),
+        })
     }
 
     pub async fn list(&self) -> Result<Vec<DbFile>, AppError> {
@@ -111,7 +139,10 @@ impl DbStore {
 
     pub async fn remove(&self, id: &FileId) -> Result<(), AppError> {
         let pool = self.pool()?;
-        sqlx::query("DELETE FROM files WHERE id = $1").bind(id).execute(pool).await?;
+        sqlx::query("DELETE FROM files WHERE id = $1")
+            .bind(id)
+            .execute(pool)
+            .await?;
         Ok(())
     }
 }

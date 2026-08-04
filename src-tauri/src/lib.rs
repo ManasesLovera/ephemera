@@ -30,12 +30,15 @@ pub fn run() {
                 .join("vault");
 
             tauri::async_runtime::block_on(async {
-                let database_url = std::env::var("DATABASE_URL")
-                    .unwrap_or_else(|_| "postgres://ephemera:ephemera_dev_only@localhost:5432/ephemera".to_string());
+                let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+                    "postgres://ephemera:ephemera_dev_only@localhost:5432/ephemera".to_string()
+                });
                 let db = db_store::DbStore::connect(&database_url).await;
 
-                let gcs_key_path = std::env::var("GCS_KEY_PATH").unwrap_or_else(|_| "gcs-key.json".to_string());
-                let gcs_bucket = std::env::var("GCS_BUCKET").unwrap_or_else(|_| "ephemera-vault".to_string());
+                let gcs_key_path =
+                    std::env::var("GCS_KEY_PATH").unwrap_or_else(|_| "gcs-key.json".to_string());
+                let gcs_bucket =
+                    std::env::var("GCS_BUCKET").unwrap_or_else(|_| "ephemera-vault".to_string());
                 let cloud = cloud_store::CloudStore::load(&gcs_key_path, gcs_bucket);
 
                 let app_state = Arc::new(AppState::new(vault_path, db, cloud));
