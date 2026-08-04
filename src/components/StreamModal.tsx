@@ -1,11 +1,13 @@
 import { formatBytes, formatMs, formatThroughput } from "../lib/format";
 import type { StreamReport } from "../types";
+import { useT } from "../lib/i18n";
 
 export function StreamModal({ report, onClose }: { report: StreamReport; onClose: () => void }) {
+  const t = useT();
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Streaming report — {report.file_name}</h3>
+        <h3>{t.streamReportTitle(report.file_name)}</h3>
         <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>
           {formatBytes(report.bytes_total)} moved in {formatMs(report.elapsed_ms)} ({formatThroughput(report.throughput_mb_s)}),
           reading/writing in fixed {formatBytes(report.chunk_size)} chunks — peak memory for this operation never
@@ -13,19 +15,19 @@ export function StreamModal({ report, onClose }: { report: StreamReport; onClose
         </p>
         <div className="stat-pair">
           <div className="box">
-            <div className="small">Streaming peak (measured)</div>
+            <div className="small">{t.streamPeak}</div>
             <div className="big">{formatBytes(report.chunk_size)}</div>
           </div>
           <div className="box">
-            <div className="small">Buffered would need (derived)</div>
+            <div className="small">{t.bufferedWould}</div>
             <div className="big">{formatBytes(report.buffered_equivalent_peak_bytes)}</div>
           </div>
           <div className="box">
-            <div className="small">Files at once — streaming</div>
+            <div className="small">{t.filesAtOnceStream}</div>
             <div className="big">{report.max_concurrent_streaming}</div>
           </div>
           <div className="box">
-            <div className="small">Files at once — buffered</div>
+            <div className="small">{t.filesAtOnceBuffered}</div>
             <div className="big">{report.max_concurrent_buffered}</div>
           </div>
         </div>
@@ -35,7 +37,7 @@ export function StreamModal({ report, onClose }: { report: StreamReport; onClose
           Concurrency figures are calculated against the 10 MB RAM cap, not live-measured.
         </p>
         <div className="close-row">
-          <button className="btn primary" onClick={onClose}>Close</button>
+          <button className="btn primary" onClick={onClose}>{t.close}</button>
         </div>
       </div>
     </div>

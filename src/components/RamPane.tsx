@@ -7,11 +7,13 @@ import { Meter } from "./Meter";
 import { FileCard } from "./FileCard";
 import { MAX_RAM_BYTES } from "../types";
 import type { StreamReport } from "../types";
+import { useT } from "../lib/i18n";
 
 export function RamPane({ onError, onStreamReport }: { onError: (m: string) => void; onStreamReport: (r: StreamReport) => void }) {
   const { ramFiles, refreshRam, refreshDisk, refreshDb, refreshCloud } = useAppStore();
   const [dragOver, setDragOver] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -67,13 +69,13 @@ export function RamPane({ onError, onStreamReport }: { onError: (m: string) => v
 
   return (
     <div className="pane">
-      <h2>RAM <span className="subtitle">volatile — cleared when the app closes</span></h2>
+      <h2>{t.ramTitle} <span className="subtitle">{t.ramSubtitle}</span></h2>
       <Meter used={ramFiles.reduce((a, f) => a + f.size, 0)} cap={MAX_RAM_BYTES} segments={ramFiles.map((f) => ({ id: f.id, name: f.name, size: f.size }))} />
       <div
         ref={dropRef}
         className={`dropzone ${dragOver ? "drag-over" : ""}`}
       >
-        {ramFiles.length === 0 ? "drop files here" : `${ramFiles.length} file(s) in RAM`}
+        {ramFiles.length === 0 ? t.dropHereRam : t.filesInRam(ramFiles.length)}
       </div>
       <div className="file-list">
         {ramFiles.map((f) => (
@@ -82,8 +84,8 @@ export function RamPane({ onError, onStreamReport }: { onError: (m: string) => v
             meta={f}
             actions={[
               {
-                label: "→ Disk",
-                title: "Persist to disk",
+                label: t.toDisk,
+                title: t.persistTitle,
                 onClick: async () => {
                   try {
                     await ipc.persistToDisk(f.id);
@@ -94,8 +96,8 @@ export function RamPane({ onError, onStreamReport }: { onError: (m: string) => v
                 },
               },
               {
-                label: "→ DB",
-                title: "Save to database",
+                label: t.toDb,
+                title: t.saveDbTitle,
                 onClick: async () => {
                   try {
                     await ipc.saveToDb(f.id, "ram");
@@ -106,8 +108,8 @@ export function RamPane({ onError, onStreamReport }: { onError: (m: string) => v
                 },
               },
               {
-                label: "→ Cloud",
-                title: "Save to cloud",
+                label: t.toCloud,
+                title: t.saveCloudTitle,
                 onClick: async () => {
                   try {
                     await ipc.saveToCloud(f.id, "ram");
@@ -119,7 +121,7 @@ export function RamPane({ onError, onStreamReport }: { onError: (m: string) => v
               },
               {
                 label: "✕",
-                title: "Delete from RAM",
+                title: t.deleteRamTitle,
                 onClick: async () => {
                   await ipc.deleteFromRam(f.id);
                   await refreshRam();
@@ -130,9 +132,9 @@ export function RamPane({ onError, onStreamReport }: { onError: (m: string) => v
         ))}
       </div>
       <div className="pane-actions">
-        <button className="btn primary" onClick={browse}>Upload…</button>
-        <button className="btn" onClick={streamToDisk} title="Bypasses RAM entirely — see the streaming report">Stream to disk…</button>
-        <button className="btn danger" onClick={pullThePlug}>Pull the plug</button>
+        <button className="btn primary" onClick={browse}>{t.upload}</button>
+        <button className="btn" onClick={streamToDisk} title={t.streamToDiskHint}>{t.streamToDisk}</button>
+        <button className="btn danger" onClick={pullThePlug}>{t.pullThePlug}</button>
       </div>
     </div>
   );

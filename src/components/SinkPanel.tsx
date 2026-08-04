@@ -1,4 +1,5 @@
 import { formatBytes, pct } from "../lib/format";
+import { useT } from "../lib/i18n";
 
 interface Props {
   title: string;
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export function SinkPanel({ title, subtitle, connected, used, cap, physical, offlineMessage, extra }: Props) {
+  const t = useT();
   return (
     <div className="sink-panel">
       <h3>{title} <span className="subtitle">{subtitle}</span></h3>
@@ -29,9 +31,7 @@ export function SinkPanel({ title, subtitle, connected, used, cap, physical, off
             <span>{formatBytes(used)}</span>
             <span>of {formatBytes(cap)}</span>
           </div>
-          {physical !== undefined && (
-            <div className="physical-note">{formatBytes(physical)} physical (incl. overhead)</div>
-          )}
+          {physical !== undefined && <div className="physical-note">{t.physicalNote(formatBytes(physical))}</div>}
           {extra && <div className="physical-note">{extra}</div>}
         </>
       )}

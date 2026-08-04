@@ -44,29 +44,26 @@ does not have to re-derive it by reading every file.
 | dnd-kit drag between RAM/disk panes | Buttons only (`→ Disk`, `→ DB`, `→ Cloud`) | The spec itself requires a button equivalent to every drag gesture for accessibility — this ships the required accessible path; the drag gesture is a follow-up, not a functional gap |
 | Motion (Framer Motion) for card-crossing animation | No animation library yet | Same reasoning — functional correctness first |
 | Full chart inventory (segmented meters with per-segment labels, tier map diagram, throughput ladder across all 4 tiers) | Simple stacked-bar meters + two sparklines (RAM store bytes, process RSS) in the Instruments drawer | The two-sparkline view already demonstrates the core "never share an axis" rule from `03-ui-and-visualization.md`; the fuller chart set is next |
-| Spanish/English toggle (`docs/06-open-questions.md` item 4, answered "both") | English only | Not yet implemented — tracked below as the top open item |
+| Spanish/English toggle (`docs/06-open-questions.md` item 4, answered "both") | Built: `src/lib/i18n.ts` holds both dictionaries, a Zustand store (persisted to localStorage) tracks the current language, and every user-facing string in the app runs through `useT()`. Toggle button lives in the top-right chrome (EN/ES). | Complete |
 | GCS `google-cloud-storage` crate | Direct REST + `jsonwebtoken`-signed service-account JWT | Avoids an unfamiliar, version-drift-prone crate; verified working against the real bucket in this session, which the original doc flagged as a risk to retire |
 
 ## Known gaps — pick these up next
 
-1. **i18n (es/en toggle)** — was explicitly requested and answered "both" but not yet
-   built. All UI strings currently live inline in JSX rather than a `strings.ts` module;
-   extracting them is the first step.
-2. **Segmented per-file meters with labels + hover, tier map diagram, full throughput
+1. **Segmented per-file meters with labels + hover, tier map diagram, full throughput
    ladder across all four tiers** — the richer chart set from `03-ui-and-visualization.md`
    beyond what's listed above as built.
-3. **In-app drag between panes** (dnd-kit) and the crossing animation (Motion) — buttons
+2. **In-app drag between panes** (dnd-kit) and the crossing animation (Motion) — buttons
    work today; drag is the nicer interaction, not a blocker.
-4. **Dark mode toggle UI** — the CSS variables for both themes exist and respond to
+3. **Dark mode toggle UI** — the CSS variables for both themes exist and respond to
    `prefers-color-scheme`, but there's no in-app toggle stamping `data-theme` yet.
-5. **Visual/screenshot verification** — the sandbox this was built in has no working
+4. **Visual/screenshot verification** — the sandbox this was built in has no working
    screenshot mechanism (GNOME's D-Bus screenshot portal denied access, no `grim`, and
    `sudo apt install` requires an interactive password this session doesn't have). The
    app was verified by running `cargo tauri dev` successfully (process alive, expected
    ~200 MB RSS matching the documented WebKit-overhead teaching point, no runtime
    panics) and by the CI Tauri bundle build succeeding — but nobody has actually looked
    at the rendered window. **Do this first** in the next session with a display attached.
-6. **`upload_to_ram` currently takes a single `path: String`.** Multi-file batch
+5. **`upload_to_ram` currently takes a single `path: String`.** Multi-file batch
    validation (spec: "validate the whole batch against remaining quota as a whole") is
    not implemented — each file is validated independently as the frontend loops over a
    multi-select.

@@ -1,6 +1,7 @@
 import { useAppStore } from "../store/useAppStore";
 import { formatBytes } from "../lib/format";
 import { MAX_RAM_BYTES } from "../types";
+import { useT } from "../lib/i18n";
 
 function Sparkline({ points, max, color }: { points: number[]; max: number; color: string }) {
   const w = 600;
@@ -19,6 +20,7 @@ function Sparkline({ points, max, color }: { points: number[]; max: number; colo
 
 export function Instruments() {
   const { history, ramFiles, diskFiles, dbFiles, cloudFiles } = useAppStore();
+  const t = useT();
   const ramPoints = history.map((h) => h.ram);
   const rssPoints = history.map((h) => h.rss);
   const rssMax = Math.max(1, ...rssPoints, 1);
@@ -32,20 +34,18 @@ export function Instruments() {
 
   return (
     <details className="drawer">
-      <summary>Instruments — time series · file table</summary>
+      <summary>{t.instrumentsSummary}</summary>
       <div className="drawer-content">
         <div>
-          <div className="meter-caption"><span>RAM store bytes (0–{formatBytes(MAX_RAM_BYTES)})</span></div>
+          <div className="meter-caption"><span>{t.ramSeries}</span></div>
           <Sparkline points={ramPoints} max={MAX_RAM_BYTES} color="var(--s1)" />
-          <div className="meter-caption"><span>Process RSS (whole tree, auto-scaled to {formatBytes(rssMax)})</span></div>
+          <div className="meter-caption"><span>{t.rssSeries(formatBytes(rssMax))}</span></div>
           <Sparkline points={rssPoints} max={rssMax} color="var(--s2)" />
-          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
-            Two separate scales, deliberately never combined on one axis — see docs/03-ui-and-visualization.md.
-          </p>
+          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{t.axisNote}</p>
         </div>
         <table className="file-table">
           <thead>
-            <tr><th>Name</th><th>Size</th><th>Tier</th><th>Mime</th></tr>
+            <tr><th>{t.tableName}</th><th>{t.tableSize}</th><th>{t.tableTier}</th><th>{t.tableMime}</th></tr>
           </thead>
           <tbody>
             {allRows.map((r, i) => (

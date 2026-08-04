@@ -10,11 +10,14 @@ import { StreamModal } from "./components/StreamModal";
 import { formatBytes } from "./lib/format";
 import { MAX_RAM_BYTES, MAX_DISK_BYTES } from "./types";
 import type { StreamReport } from "./types";
+import { useT, useI18nStore } from "./lib/i18n";
 
 function App() {
   const { init, metrics, ramFiles, diskFiles, dbStatus, cloudStatus } = useAppStore();
   const [error, setError] = useState<string | null>(null);
   const [streamReport, setStreamReport] = useState<StreamReport | null>(null);
+  const t = useT();
+  const { lang, setLang } = useI18nStore();
 
   useEffect(() => {
     init();
@@ -34,20 +37,25 @@ function App() {
     <div className="app">
       <div className="chrome">
         <h1>Ephemera</h1>
-        <span className="vault-path">RAM vs Disk vs Database vs Cloud</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span className="vault-path">{t.appSubtitle}</span>
+          <button className="btn" onClick={() => setLang(lang === "en" ? "es" : "en")}>
+            {lang === "en" ? "ES" : "EN"}
+          </button>
+        </div>
       </div>
 
       {error && (
         <div className="error-banner" onClick={() => setError(null)}>
-          {error} <span style={{ opacity: 0.6 }}> (click to dismiss)</span>
+          {error} <span style={{ opacity: 0.6 }}> {t.dismiss}</span>
         </div>
       )}
 
       <div className="kpi-row">
-        <StatTile label="RAM used" value={formatBytes(ramBytes)} caption={`of ${formatBytes(MAX_RAM_BYTES)}`} />
-        <StatTile label="Disk used" value={formatBytes(diskBytes)} caption={`of ${formatBytes(MAX_DISK_BYTES)}`} />
-        <StatTile label="App memory" value={formatBytes(rss)} caption="whole process tree, approximate" />
-        <StatTile label="Files" value={`${ramFiles.length} / ${diskFiles.length}`} caption="ram / disk" />
+        <StatTile label={t.ramUsed} value={formatBytes(ramBytes)} caption={`${formatBytes(MAX_RAM_BYTES)}`} />
+        <StatTile label={t.diskUsed} value={formatBytes(diskBytes)} caption={`${formatBytes(MAX_DISK_BYTES)}`} />
+        <StatTile label={t.appMemory} value={formatBytes(rss)} caption={t.appMemoryCaption} />
+        <StatTile label={t.files} value={`${ramFiles.length} / ${diskFiles.length}`} caption={t.filesCaption} />
       </div>
 
       <div className="panes">
@@ -57,22 +65,22 @@ function App() {
 
       <div className="sinks">
         <SinkPanel
-          title="Database"
-          subtitle="postgres (docker)"
+          title={t.dbTitle}
+          subtitle={t.dbSubtitle}
           connected={!!dbStatus?.connected}
           used={dbStatus?.logical_bytes ?? 0}
           cap={dbStatus?.cap ?? 100 * 1024 * 1024}
           physical={dbStatus?.physical_bytes}
-          offlineMessage={dbStatus?.message ? `docker compose up -d — ${dbStatus.message}` : "docker compose up -d"}
+          offlineMessage={dbStatus?.message ? t.dockerHint(dbStatus.message) : t.dockerDefault}
         />
         <SinkPanel
-          title="Cloud"
-          subtitle="gcs bucket"
+          title={t.cloudTitle}
+          subtitle={t.cloudSubtitle}
           connected={!!cloudStatus?.connected}
           used={cloudStatus?.bytes_used ?? 0}
           cap={cloudStatus?.cap ?? 100 * 1024 * 1024}
           extra={cloudStatus?.bucket ? `bucket: ${cloudStatus.bucket}` : undefined}
-          offlineMessage={cloudStatus?.message || "see docs/09-gcs-tier.md"}
+          offlineMessage={cloudStatus?.message || t.cloudDefault}
         />
       </div>
 
