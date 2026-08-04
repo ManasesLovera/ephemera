@@ -47,7 +47,55 @@ does not have to re-derive it by reading every file.
 | Spanish/English toggle (`docs/06-open-questions.md` item 4, answered "both") | Built: `src/lib/i18n.ts` holds both dictionaries, a Zustand store (persisted to localStorage) tracks the current language, and every user-facing string in the app runs through `useT()`. Toggle button lives in the top-right chrome (EN/ES). | Complete |
 | GCS `google-cloud-storage` crate | Direct REST + `jsonwebtoken`-signed service-account JWT | Avoids an unfamiliar, version-drift-prone crate; verified working against the real bucket in this session, which the original doc flagged as a risk to retire |
 
-## Known gaps — pick these up next
+## Visual verification — done, and it caught a real bug
+
+The window **was** visually verified in this session. GNOME's D-Bus screenshot portal
+denies access and there's no `grim`/passwordless `sudo` for one, but forcing the webview
+through XWayland (`GDK_BACKEND=x11`, plus `WEBKIT_DISABLE_DMABUF_RENDERER=1` and
+`WEBKIT_DISABLE_COMPOSITING_MODE=1` to defeat WebKit's GL compositing path, which
+otherwise leaves the X11 window's backing pixmap empty) let `import -window <id>`
+(ImageMagick) capture the real rendered window. `ffmpeg -f x11grab` alone was not
+enough — it reads the root window's composited output, which under a Wayland-native
+compositor (mutter) never receives the X11 client's content; `import` against the
+specific window ID reads via XComposite and does.
+
+The screenshot immediately surfaced a real bug: **"App Memory" read 13,745.2 MB**
+instead of the expected ~450 MB. Root cause: `sysinfo` on Linux enumerates each
+*thread* of every process as its own pseudo-process entry (reading
+`/proc/[pid]/task/[tid]`), each reporting the parent's full process-wide RSS. The
+original `tree_rss` walk in `metrics.rs` treated these as child processes and summed
+each thread's (identical, whole-process) RSS once per thread — WebKitWebProcess alone
+has ~15 threads, so its true ~210 MB was counted roughly 15 times over. Fixed by
+filtering on `Process::thread_kind().is_none()` (thread pseudo-entries return
+`Some(_)`, real processes `None`) both when accumulating and when walking children.
+Rebuilt, re-screenshotted: **449.2 MB**, matching `ps aux` summed by hand. This is
+exactly the kind of bug the app's own `04-tech-stack.md` warned about ("RSS across a
+process tree double-counts shared pages... label it in the UI as an approximation") —
+the warning was about a different failure mode, but the same instinct (verify the
+number, don't trust the aggregation) is what caught this one.
+
+The same screenshot pass also confirmed, live, against real infrastructure: the DB
+panel correctly shows "32.0 KB physical (incl. overhead)" against 0 B logical — the
+Postgres table's own baseline page overhead, visible even with zero files stored, which
+is a live instance of the logical-vs-physical teaching point the tier was built to
+demonstrate. The cloud panel correctly shows `bucket: ephemera-vault-alterna`, confirming
+the real GCS connection from the UI layer, not just the backend integration test.
+
+A cosmetic bug was also caught and fixed in the same pass: the DB/Cloud sink meters
+forced a minimum-visible sliver (`Math.max(1, pct(...))`) even at exactly 0 bytes used,
+making empty stores look like they held something. Fixed to render no fill at all when
+`used === 0`.
+
+**Not yet tested**: actual click-driven interaction (upload a file, drag, persist).
+This sandbox has no `xdotool`/`ydotool`/`wtype` for simulated input, so nothing could
+click the "Upload…" button or drive the native file picker. The IPC layer those buttons
+call is fully covered by the 25 Rust tests (including live Postgres/GCS round-trips),
+and the metrics pipeline was confirmed live end-to-end (Rust state → `metrics://tick`
+event → Zustand store → re-render, watched update in real time across a rebuild) — but
+nobody has literally clicked a button in this UI yet. That's the next session's first
+job with a real input device attached.
+
+## Other known gaps — pick these up next
 
 1. **Segmented per-file meters with labels + hover, tier map diagram, full throughput
    ladder across all four tiers** — the richer chart set from `03-ui-and-visualization.md`
@@ -56,14 +104,7 @@ does not have to re-derive it by reading every file.
    work today; drag is the nicer interaction, not a blocker.
 3. **Dark mode toggle UI** — the CSS variables for both themes exist and respond to
    `prefers-color-scheme`, but there's no in-app toggle stamping `data-theme` yet.
-4. **Visual/screenshot verification** — the sandbox this was built in has no working
-   screenshot mechanism (GNOME's D-Bus screenshot portal denied access, no `grim`, and
-   `sudo apt install` requires an interactive password this session doesn't have). The
-   app was verified by running `cargo tauri dev` successfully (process alive, expected
-   ~200 MB RSS matching the documented WebKit-overhead teaching point, no runtime
-   panics) and by the CI Tauri bundle build succeeding — but nobody has actually looked
-   at the rendered window. **Do this first** in the next session with a display attached.
-5. **`upload_to_ram` currently takes a single `path: String`.** Multi-file batch
+4. **`upload_to_ram` currently takes a single `path: String`.** Multi-file batch
    validation (spec: "validate the whole batch against remaining quota as a whole") is
    not implemented — each file is validated independently as the frontend loops over a
    multi-select.

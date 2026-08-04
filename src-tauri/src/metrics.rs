@@ -21,6 +21,13 @@ fn now_millis() -> i64 {
 /// Sums RSS across the whole process tree rooted at `root_pid`. WebKitGTK forks child
 /// processes for web content on Linux; reporting only our own PID would badly understate
 /// what the app actually costs.
+///
+/// On Linux, `sysinfo` also enumerates each thread of every process as its own pseudo
+/// "process" entry (reading `/proc/[pid]/task/[tid]`), each reporting the *same*
+/// process-wide RSS as its parent. Walking the parent/child graph naively sums that
+/// figure once per thread — a process with 20 threads inflates the total by 20x.
+/// `thread_kind()` is `Some(_)` for these thread entries and `None` for real processes;
+/// skipping the former is what keeps this an actual per-process sum.
 fn tree_rss(sys: &System, root_pid: Pid) -> (u64, usize) {
     let mut total = 0u64;
     let mut count = 0usize;
@@ -31,11 +38,13 @@ fn tree_rss(sys: &System, root_pid: Pid) -> (u64, usize) {
             continue;
         }
         if let Some(proc_) = sys.process(pid) {
-            total += proc_.memory();
-            count += 1;
+            if proc_.thread_kind().is_none() {
+                total += proc_.memory();
+                count += 1;
+            }
         }
         for (child_pid, child) in sys.processes() {
-            if child.parent() == Some(pid) {
+            if child.parent() == Some(pid) && child.thread_kind().is_none() {
                 stack.push(*child_pid);
             }
         }

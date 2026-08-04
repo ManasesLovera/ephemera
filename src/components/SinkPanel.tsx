@@ -22,10 +22,12 @@ export function SinkPanel({ title, subtitle, connected, used, cap, physical, off
       ) : (
         <>
           <div className="meter-track">
-            <div
-              className="meter-seg"
-              style={{ width: `${Math.max(1, pct(used, cap))}%`, background: "var(--s6)" }}
-            />
+            {used > 0 && (
+              <div
+                className="meter-seg"
+                style={{ width: `${Math.max(1, pct(used, cap))}%`, background: "var(--s6)" }}
+              />
+            )}
           </div>
           <div className="meter-caption">
             <span>{formatBytes(used)}</span>
