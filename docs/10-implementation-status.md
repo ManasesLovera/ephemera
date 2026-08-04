@@ -86,25 +86,69 @@ forced a minimum-visible sliver (`Math.max(1, pct(...))`) even at exactly 0 byte
 making empty stores look like they held something. Fixed to render no fill at all when
 `used === 0`.
 
-**Not yet tested**: actual click-driven interaction (upload a file, drag, persist).
-This sandbox has no `xdotool`/`ydotool`/`wtype` for simulated input, so nothing could
-click the "Upload…" button or drive the native file picker. The IPC layer those buttons
-call is fully covered by the 25 Rust tests (including live Postgres/GCS round-trips),
-and the metrics pipeline was confirmed live end-to-end (Rust state → `metrics://tick`
-event → Zustand store → re-render, watched update in real time across a rebuild) — but
-nobody has literally clicked a button in this UI yet. That's the next session's first
-job with a real input device attached.
+**Click-driven interaction: since confirmed, by the user, for real.** The caveat above
+was true when written; later the same session, real click-driven use (upload, persist
+to disk, save to DB, save to Cloud) happened via the user's own build running on this
+same machine/display — evidenced by a real file ("A Tour of C++...") showing up
+correctly in the Disk, Database, and Cloud panels simultaneously, each with a working
+delete button, when checked via the screenshot technique. The full pipeline — click →
+IPC → Rust state → real Postgres/GCS → UI reflecting it — is confirmed working
+end-to-end, not just individually tested.
+
+## Built after this doc was first written
+
+- **Full i18n (English/Spanish toggle)** — `src/lib/i18n.ts`, every string in the app
+  routed through `useT()`, toggle in the top-right chrome. No longer a gap.
+- **Database and Cloud panels now list and delete files**, matching RAM/Disk — each row
+  has a single ✕ delete action (no move actions; DB/Cloud stay one-way sinks per the
+  tier graph). Verified against the live Postgres container and the real GCS bucket.
+- **Loading states + tooltip**: "Open folder" / "Rescan" show a spinner and disable
+  while their async call is in flight; "Pull the plug" has a hover tooltip explaining
+  what it actually does (instant, total, no undo) — it was the one destructive action
+  with no explanation attached.
+- **`DOWNLOAD.md`** — points at the GitHub Releases page rather than hardcoded
+  version links (those go stale the moment a new tag ships), with a table decoding the
+  asset-naming pattern per platform and full build-from-source steps.
+- **Release process is live**: v0.1.0 was created manually (Linux x86_64 only, built
+  and uploaded from this machine). v0.2.0 used the new
+  [`.github/workflows/release.yml`](../.github/workflows/release.yml) — triggered by
+  pushing a `v*` tag, builds a 5-way matrix (Linux x86_64, Linux arm64, Windows x64,
+  macOS arm64, macOS x64) via `tauri-apps/tauri-action`, auto-creates the release and
+  attaches whatever each platform produces.
+
+### Known bug: Linux arm64 release build fails in CI
+
+The `ubuntu-24.04-arm` leg of `release.yml` has failed on every release so far —
+`pnpm tauri build` exits 1 partway through the "Build and publish" step. Not yet
+diagnosed. The other four platforms (Linux x86_64, Windows x64, macOS arm64, macOS
+x64) have built clean on every run since v0.2.0. Likely causes worth checking first:
+a Tauri Linux dependency (`libayatana-appindicator3-dev` or similar) not resolving on
+the arm64 Ubuntu image, or `linuxdeploy`/AppImage tooling not shipping an arm64
+binary — the AppImage bundling step is a common failure point for arm64 specifically.
+Until fixed, Linux arm64 has no prebuilt binary; `DOWNLOAD.md` documents
+build-from-source as the workaround.
+
+### Version bump procedure (for the next tag)
+
+Three files carry the version number and must be bumped together, or the release
+name/binary metadata will disagree with each other: `package.json`,
+`src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`. After bumping `Cargo.toml`, run
+`cargo check` once to regenerate `Cargo.lock` (it embeds the package version) before
+committing. Then `git tag -a vX.Y.Z -m "..."` and `git push origin vX.Y.Z` to trigger
+`release.yml`.
 
 ## Other known gaps — pick these up next
 
-1. **Segmented per-file meters with labels + hover, tier map diagram, full throughput
+1. **Fix the Linux arm64 release build** (above) — the most concrete, well-scoped next
+   task.
+2. **Segmented per-file meters with labels + hover, tier map diagram, full throughput
    ladder across all four tiers** — the richer chart set from `03-ui-and-visualization.md`
    beyond what's listed above as built.
-2. **In-app drag between panes** (dnd-kit) and the crossing animation (Motion) — buttons
+3. **In-app drag between panes** (dnd-kit) and the crossing animation (Motion) — buttons
    work today; drag is the nicer interaction, not a blocker.
-3. **Dark mode toggle UI** — the CSS variables for both themes exist and respond to
+4. **Dark mode toggle UI** — the CSS variables for both themes exist and respond to
    `prefers-color-scheme`, but there's no in-app toggle stamping `data-theme` yet.
-4. **`upload_to_ram` currently takes a single `path: String`.** Multi-file batch
+5. **`upload_to_ram` currently takes a single `path: String`.** Multi-file batch
    validation (spec: "validate the whole batch against remaining quota as a whole") is
    not implemented — each file is validated independently as the frontend loops over a
    multi-select.
