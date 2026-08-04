@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ephemera
+      POSTGRES_PASSWORD: ephemera_dev_only
+      POSTGRES_DB: ephemera
+    ports:
+      - "5432:5432"
+    volumes:
+      - ephemera_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ephemera"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  ephemera_pgdata:

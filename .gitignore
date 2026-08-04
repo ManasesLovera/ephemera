@@ -1,0 +1,22 @@
+# Logs
+logs
+*.log
+
+# Rust / Tauri
+/src-tauri/target/
+/src-tauri/gen/
+
+# Node
+/node_modules/
+/dist/
+/dist-ssr/
+*.local
+
+# Secrets — never commit
+/src-tauri/.env
+/src-tauri/gcs-key.json
+*.pem
+*.key
+
+# OS
+.DS_Store
