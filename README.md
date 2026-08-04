@@ -1,18 +1,32 @@
 # Ephemera
 
-> A desktop app that teaches the difference between **RAM** and **disk** by making you
-> feel it. Files you upload live *only* in RAM. They disappear when the app closes —
-> unless you deliberately carry them across to disk.
+> A desktop app that teaches the storage hierarchy — **RAM, disk, database, and cloud**
+> — by making you feel it. Files you upload live *only* in RAM until you deliberately
+> carry them somewhere durable.
 
-**Status:** design phase. No code written yet. All specification lives in [`docs/`](docs/).
+**Status:** working app. RAM, disk, database (Postgres), and cloud (GCS) tiers are all
+implemented and tested; CI is green. Full design spec lives in [`docs/`](docs/).
 
----
+## Running it
 
-## Read this first
+```bash
+docker compose up -d          # postgres, for the database tier
+cd src-tauri && cp .env.example .env   # then fill in GCS_BUCKET if you have one — see docs/09-gcs-tier.md
+cd ..
+pnpm install
+pnpm tauri dev
+```
 
-This project was specified in a single conversation on **2026-08-04** and the docs below
-capture everything decided in it. Nothing here has been implemented — the next session
-should start by reading the docs in order, then produce an implementation plan.
+The RAM and disk tiers work with zero setup. The database tier needs Postgres running
+(`docker compose up -d`); the cloud tier needs a GCS service-account key at
+`src-tauri/gcs-key.json` (see [`docs/09-gcs-tier.md`](docs/09-gcs-tier.md)). Both
+degrade to an "offline" panel rather than breaking the app if unavailable.
+
+```bash
+cd src-tauri && cargo test    # 25 tests: unit + real Postgres/GCS integration
+```
+
+## Docs
 
 | Doc | What it answers |
 | --- | --- |
@@ -23,6 +37,10 @@ should start by reading the docs in order, then produce an implementation plan.
 | [`docs/04-tech-stack.md`](docs/04-tech-stack.md) | Chosen libraries with rationale + verified machine prereqs |
 | [`docs/05-teaching-notes.md`](docs/05-teaching-notes.md) | The CS concepts, and which UI element teaches each |
 | [`docs/06-open-questions.md`](docs/06-open-questions.md) | Decisions still needed before/during build |
+| [`docs/07-streaming.md`](docs/07-streaming.md) | The RAM-bypass streaming path and its report |
+| [`docs/08-database-tier.md`](docs/08-database-tier.md) | Postgres/Docker binary storage tier |
+| [`docs/09-gcs-tier.md`](docs/09-gcs-tier.md) | Cloud tier + full GCP setup guide |
+| [`docs/10-implementation-status.md`](docs/10-implementation-status.md) | What's actually built vs. spec, and known deviations |
 
 ## The idea in one paragraph
 

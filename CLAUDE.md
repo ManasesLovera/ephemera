@@ -2,27 +2,33 @@
 
 ## Read before doing anything
 
-This project is **in design phase — no code exists yet.** The complete specification is
-in [`docs/`](docs/) and was written on 2026-08-04. Read it in order before proposing or
-writing anything:
+This is a **working app** — RAM, disk, database (Postgres), and cloud (GCS) tiers are
+all implemented and tested, CI is green. Start with
+[`docs/10-implementation-status.md`](docs/10-implementation-status.md) — it's the
+honest diff between the original spec and what's actually built, and lists the known
+gaps to pick up next (screenshot/visual verification is the top one). Then the rest of
+`docs/` for the full spec:
 
 1. `docs/00-vision.md` — what this is and why
-2. `docs/01-requirements.md` — MUST/SHOULD/COULD, the hard limits
+2. `docs/01-requirements.md` — MUST/SHOULD/COULD, the hard limits, the tier graph
 3. `docs/02-architecture.md` — Rust state model, IPC surface, the known gotchas
 4. `docs/03-ui-and-visualization.md` — layout, drag & drop, every chart
 5. `docs/04-tech-stack.md` — chosen libraries, verified machine prereqs
 6. `docs/05-teaching-notes.md` — the concepts and which UI element teaches each
-7. `docs/06-open-questions.md` — what still needs deciding, plus the build order
-
-`docs/06-open-questions.md` ends with a staged build order. Start there.
+7. `docs/06-open-questions.md` — remaining decisions
+8. `docs/07-streaming.md` — the RAM-bypass streaming path
+9. `docs/08-database-tier.md` — Postgres tier
+10. `docs/09-gcs-tier.md` — cloud tier + GCP setup guide
 
 ## What this app is
 
-A Tauri 2 + React desktop app that teaches RAM vs. disk. Files uploaded live **only** in
-the Rust process heap, capped at 10 MB, and are lost when the app exits. Carrying a file
-to a configurable "vault" folder on disk (capped at 20 MB) is an explicit user action.
-A live dashboard shows per-file usage of both stores, real-time memory during transfers,
-and the process's actual resident memory.
+A Tauri 2 + React desktop app that teaches the storage hierarchy: RAM, disk, database,
+and cloud. Files uploaded live **only** in the Rust process heap (10 MB cap) until
+explicitly carried to disk (20 MB cap, real `fsync`), a Postgres database (100 MB cap,
+`BYTEA`, via `docker compose`), or a GCS bucket (100 MB UI cap) — one-way, never back to
+RAM. A second "stream to disk" path bypasses RAM entirely, chunk-copying with a
+completion report comparing measured peak memory against the buffered alternative. A
+live 4 Hz dashboard tracks per-tier usage and the process's actual resident memory.
 
 ## Rules specific to this project
 
