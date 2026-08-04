@@ -1,0 +1,83 @@
+name: Release
+
+# Triggered by pushing a version tag, e.g.:
+#   git tag v0.2.0 && git push origin v0.2.0
+#
+# Builds native installers for Linux (x86_64 + arm64), Windows (x86_64), and macOS
+# (Apple Silicon + Intel), then attaches them all to a GitHub Release for that tag.
+# v0.1.0 was created manually with Linux-only binaries — this workflow is what
+# produces the other platforms starting with the next tag.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-latest
+            args: ""
+          - platform: ubuntu-24.04-arm
+            args: ""
+          - platform: windows-latest
+            args: ""
+          - platform: macos-latest
+            args: "--target aarch64-apple-darwin"
+          - platform: macos-latest
+            args: "--target x86_64-apple-darwin"
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux/Tauri build dependencies
+        if: startsWith(matrix.platform, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libjavascriptcoregtk-4.1-dev \
+            libsoup-3.0-dev \
+            libgtk-3-dev \
+            librsvg2-dev \
+            build-essential \
+            pkg-config \
+            libayatana-appindicator3-dev
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Build and publish
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Ephemera ${{ github.ref_name }}"
+          releaseBody: |
+            See [DOWNLOAD.md](https://github.com/ManasesLovera/ephemera/blob/main/DOWNLOAD.md) for
+            which file to pick and what each tier needs at runtime.
+          releaseDraft: false
+          prerelease: true
+          args: ${{ matrix.args }}

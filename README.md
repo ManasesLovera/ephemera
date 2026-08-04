@@ -7,6 +7,9 @@
 **Status:** working app. RAM, disk, database (Postgres), and cloud (GCS) tiers are all
 implemented and tested; CI is green. Full design spec lives in [`docs/`](docs/).
 
+**Just want to run it?** → [**DOWNLOAD.md**](DOWNLOAD.md) — prebuilt Linux x86_64
+binaries, plus build-from-source guides for Windows, macOS, and other architectures.
+
 ## Running it
 
 ```bash
