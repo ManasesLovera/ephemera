@@ -134,7 +134,7 @@ export function RamPane({ onError, onStreamReport }: { onError: (m: string) => v
       <div className="pane-actions">
         <button className="btn primary" onClick={browse}>{t.upload}</button>
         <button className="btn" onClick={streamToDisk} title={t.streamToDiskHint}>{t.streamToDisk}</button>
-        <button className="btn danger" onClick={pullThePlug}>{t.pullThePlug}</button>
+        <button className="btn danger" onClick={pullThePlug} title={t.pullThePlugHint}>{t.pullThePlug}</button>
       </div>
     </div>
   );
