@@ -79,5 +79,5 @@ jobs:
             See [DOWNLOAD.md](https://github.com/ManasesLovera/ephemera/blob/main/DOWNLOAD.md) for
             which file to pick and what each tier needs at runtime.
           releaseDraft: false
-          prerelease: true
+          prerelease: false
           args: ${{ matrix.args }}

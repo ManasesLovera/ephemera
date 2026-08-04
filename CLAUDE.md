@@ -20,6 +20,34 @@ gaps to pick up next (screenshot/visual verification is the top one). Then the r
 9. `docs/08-database-tier.md` — Postgres tier
 10. `docs/09-gcs-tier.md` — cloud tier + GCP setup guide
 
+## Git & release workflow — read before touching git
+
+- **Do not push after every requested change.** Commit and push only when the user
+  explicitly asks for it in that turn — a past instruction to commit/push does not
+  carry forward to later, unrelated changes; ask again (or wait to be asked) each time.
+- **Commits happen only on explicit user request.** Making a change is not, by itself,
+  a request to commit it. Batch unpushed work rather than committing reflexively after
+  each edit.
+- **Tags and releases happen only on an explicit trigger** — phrasing like "create a
+  new release" or "create a new tag". Never tag or release as a side effect of
+  finishing a feature, even a big one.
+- **When asked to create a release:**
+  1. Check the current/last tag (`git tag --sort=-v:refname | head -1`, or
+     `gh release list --limit 1`) and decide the next version.
+  2. Bump the version in all three places together — `package.json`,
+     `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` — then run `cargo check`
+     once to refresh `Cargo.lock` before committing.
+  3. **Release notes must be a full changelog of every change since the last tag**,
+     not just the latest commit — build it from `git log <last-tag>..HEAD --oneline`
+     (grouped by type if there's enough to group).
+  4. Reference [`DOWNLOAD.md`](DOWNLOAD.md) in the release notes for how to get or
+     build the binaries.
+  5. **Releases are always regular releases, never pre-releases.** `release.yml` sets
+     `prerelease: false`; a manual `gh release create` must not pass `--prerelease`.
+  6. Push the tag (`git push origin vX.Y.Z`) to trigger `release.yml`.
+- Commits that update these instructions themselves (this file) use the `chore:`
+  conventional-commit type.
+
 ## What this app is
 
 A Tauri 2 + React desktop app that teaches the storage hierarchy: RAM, disk, database,
