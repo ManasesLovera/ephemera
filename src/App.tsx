@@ -8,12 +8,14 @@ import { SinkPanel } from "./components/SinkPanel";
 import { Instruments } from "./components/Instruments";
 import { StreamModal } from "./components/StreamModal";
 import { formatBytes } from "./lib/format";
+import { ipc } from "./lib/ipc";
 import { MAX_RAM_BYTES, MAX_DISK_BYTES } from "./types";
 import type { StreamReport } from "./types";
 import { useT, useI18nStore } from "./lib/i18n";
 
 function App() {
-  const { init, metrics, ramFiles, diskFiles, dbStatus, cloudStatus } = useAppStore();
+  const { init, metrics, ramFiles, diskFiles, dbFiles, cloudFiles, dbStatus, cloudStatus, refreshDb, refreshCloud } =
+    useAppStore();
   const [error, setError] = useState<string | null>(null);
   const [streamReport, setStreamReport] = useState<StreamReport | null>(null);
   const t = useT();
@@ -72,6 +74,16 @@ function App() {
           cap={dbStatus?.cap ?? 100 * 1024 * 1024}
           physical={dbStatus?.physical_bytes}
           offlineMessage={dbStatus?.message ? t.dockerHint(dbStatus.message) : t.dockerDefault}
+          files={dbFiles.map((f) => f.meta)}
+          deleteTitle={t.deleteDbTitle}
+          onDelete={async (id) => {
+            try {
+              await ipc.deleteFromDb(id);
+              await refreshDb();
+            } catch (e) {
+              setError((e as { message?: string })?.message || String(e));
+            }
+          }}
         />
         <SinkPanel
           title={t.cloudTitle}
@@ -81,6 +93,16 @@ function App() {
           cap={cloudStatus?.cap ?? 100 * 1024 * 1024}
           extra={cloudStatus?.bucket ? `bucket: ${cloudStatus.bucket}` : undefined}
           offlineMessage={cloudStatus?.message || t.cloudDefault}
+          files={cloudFiles.map((f) => f.meta)}
+          deleteTitle={t.deleteCloudTitle}
+          onDelete={async (id) => {
+            try {
+              await ipc.deleteFromCloud(id);
+              await refreshCloud();
+            } catch (e) {
+              setError((e as { message?: string })?.message || String(e));
+            }
+          }}
         />
       </div>
 

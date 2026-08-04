@@ -1,5 +1,7 @@
 import { formatBytes, pct } from "../lib/format";
 import { useT } from "../lib/i18n";
+import { FileCard } from "./FileCard";
+import type { FileMeta } from "../types";
 
 interface Props {
   title: string;
@@ -10,9 +12,24 @@ interface Props {
   physical?: number;
   offlineMessage?: string | null;
   extra?: string;
+  files: FileMeta[];
+  deleteTitle: string;
+  onDelete: (id: string) => void;
 }
 
-export function SinkPanel({ title, subtitle, connected, used, cap, physical, offlineMessage, extra }: Props) {
+export function SinkPanel({
+  title,
+  subtitle,
+  connected,
+  used,
+  cap,
+  physical,
+  offlineMessage,
+  extra,
+  files,
+  deleteTitle,
+  onDelete,
+}: Props) {
   const t = useT();
   return (
     <div className="sink-panel">
@@ -35,6 +52,19 @@ export function SinkPanel({ title, subtitle, connected, used, cap, physical, off
           </div>
           {physical !== undefined && <div className="physical-note">{t.physicalNote(formatBytes(physical))}</div>}
           {extra && <div className="physical-note">{extra}</div>}
+          <div className="file-list" style={{ marginTop: 10 }}>
+            {files.length === 0 ? (
+              <div className="physical-note">{t.noFilesYet}</div>
+            ) : (
+              files.map((f) => (
+                <FileCard
+                  key={f.id}
+                  meta={f}
+                  actions={[{ label: "✕", title: deleteTitle, onClick: () => onDelete(f.id) }]}
+                />
+              ))
+            )}
+          </div>
         </>
       )}
     </div>
