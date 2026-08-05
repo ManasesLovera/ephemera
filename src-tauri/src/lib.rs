@@ -10,18 +10,53 @@ pub mod types;
 pub mod vault;
 
 use state::AppState;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tauri::Manager;
 
+/// Walks upward from `start`, returning the first ancestor directory containing
+/// `filename`. Anchoring the search on the executable's own location (rather than
+/// the process's current working directory) means `.env` and `gcs-key.json` are
+/// found the same way whether the app is launched via `cargo tauri dev` (exe under
+/// `src-tauri/target/debug`) or as a standalone release binary run from anywhere.
+fn find_upwards(start: &Path, filename: &str) -> Option<PathBuf> {
+    let mut dir = Some(start);
+    while let Some(d) = dir {
+        let candidate = d.join(filename);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+        dir = d.parent();
+    }
+    None
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let _ = dotenvy::dotenv();
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(Path::to_path_buf));
+
+    let env_path = exe_dir.as_deref().and_then(|d| find_upwards(d, ".env"));
+    match &env_path {
+        Some(path) => {
+            let _ = dotenvy::from_path(path);
+        }
+        None => {
+            let _ = dotenvy::dotenv();
+        }
+    }
+    let config_dir = env_path
+        .as_ref()
+        .and_then(|p| p.parent().map(Path::to_path_buf))
+        .or(exe_dir)
+        .unwrap_or_else(|| PathBuf::from("."));
 
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .setup(|app| {
+        .setup(move |app| {
             let handle = app.handle().clone();
             let vault_path = app
                 .path()
@@ -35,11 +70,30 @@ pub fn run() {
                 });
                 let db = db_store::DbStore::connect(&database_url).await;
 
-                let gcs_key_path =
-                    std::env::var("GCS_KEY_PATH").unwrap_or_else(|_| "gcs-key.json".to_string());
+                let gcs_key_path = std::env::var("GCS_KEY_PATH")
+                    .unwrap_or_else(|_| "gcs-key.json".to_string());
+                // GCS_KEY_PATH (whether from .env or its default) is conventionally a bare
+                // filename meant to sit next to .env — resolve it against config_dir rather
+                // than the process's current working directory, which varies by launch method.
+                let gcs_key_path = if Path::new(&gcs_key_path).is_absolute() {
+                    gcs_key_path
+                } else {
+                    config_dir
+                        .join(&gcs_key_path)
+                        .to_string_lossy()
+                        .into_owned()
+                };
                 let gcs_bucket =
                     std::env::var("GCS_BUCKET").unwrap_or_else(|_| "ephemera-vault".to_string());
                 let cloud = cloud_store::CloudStore::load(&gcs_key_path, gcs_bucket);
+                #[cfg(debug_assertions)]
+                eprintln!(
+                    "DEBUG cwd={:?} gcs_key_path={:?} connected={} reason={:?}",
+                    std::env::current_dir(),
+                    gcs_key_path,
+                    cloud.is_connected(),
+                    cloud.offline_reason()
+                );
 
                 let app_state = Arc::new(AppState::new(vault_path, db, cloud));
                 handle.manage(app_state.clone());
