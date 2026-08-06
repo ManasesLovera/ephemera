@@ -70,8 +70,8 @@ pub fn run() {
                 });
                 let db = db_store::DbStore::connect(&database_url).await;
 
-                let gcs_key_path = std::env::var("GCS_KEY_PATH")
-                    .unwrap_or_else(|_| "gcs-key.json".to_string());
+                let gcs_key_path =
+                    std::env::var("GCS_KEY_PATH").unwrap_or_else(|_| "gcs-key.json".to_string());
                 // GCS_KEY_PATH (whether from .env or its default) is conventionally a bare
                 // filename meant to sit next to .env — resolve it against config_dir rather
                 // than the process's current working directory, which varies by launch method.
