@@ -19,13 +19,32 @@ docker compose up -d          # postgres, for the database tier
 cd src-tauri && cp .env.example .env   # then fill in GCS_BUCKET if you have one — see docs/09-gcs-tier.md
 cd ..
 pnpm install
-pnpm tauri dev
+pnpm tauri dev                # or: make dev
 ```
 
 The RAM and disk tiers work with zero setup. The database tier needs Postgres running
 (`docker compose up -d`); the cloud tier needs a GCS service-account key at
 `src-tauri/gcs-key.json` (see [`docs/09-gcs-tier.md`](docs/09-gcs-tier.md)). Both
 degrade to an "offline" panel rather than breaking the app if unavailable.
+
+### Dev mode vs. release build
+
+Dev mode (`pnpm tauri dev` / `make dev`) starts a Vite dev server on
+`localhost:1420` and points the app's webview at it — that's why it's a single command
+and picks up frontend changes live. Running the compiled debug binary
+(`src-tauri/target/debug/ephemera`) directly, without that dev server also running,
+loads a blank page: the binary still expects `localhost:1420` and there's nothing
+there to serve it.
+
+The release build is different: the frontend is compiled to static files and baked
+into the binary, so it runs standalone with no dev server.
+
+```bash
+pnpm tauri build               # or: make build
+./src-tauri/target/release/ephemera   # or: make run
+# or both in one step:
+make release
+```
 
 ```bash
 cd src-tauri && cargo test    # 25 tests: unit + real Postgres/GCS integration
