@@ -4,6 +4,7 @@ logs
 
 # Rust / Tauri
 /src-tauri/target/
+/spike-slint/target/
 /src-tauri/gen/
 
 # Node

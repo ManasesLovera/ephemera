@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated_at": "2026-08-08T22:30:00Z",
+  "updated_at": "2026-08-08T23:52:03Z",
   "tasks": [
     {
       "id": "P0-T1",
@@ -43,9 +43,9 @@
       "prompt_file": "prompts/P0-T2-spike.md",
       "worktree": "worktrees/P0-T2",
       "branch": "migration/P0-T2",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-08T23:35:00Z",
+      "finished_at": "2026-08-08T23:52:03Z",
       "fallback_models": [
         "opencode-go/kimi-k2.7-code",
         "opencode-go/glm-5.2"
@@ -53,14 +53,19 @@
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Created standalone spike-slint Cargo package with Slint meter/stat tile bindings and a real touched Vec<u8> allocation.",
+          "Updated bound properties from a 250 ms timer, matching the 4 Hz dashboard cadence.",
+          "cargo build --release succeeded for the Slint spike.",
+          "Recorded Slint release RSS: 92428 kB idle and 143632 kB after the 50 MiB buffer allocation in spike-slint/MEASURE.md.",
+          "Built the existing Tauri application with pnpm tauri build in release mode and recorded its idle main-process and process-tree RSS.",
+          "No RSS savings claim made because the matched post-50-MiB Tauri point could not be captured cleanly in the available Wayland environment."
         ],
         "missing": [
-          "No implementation or verification recorded yet."
+          "Tauri post-allocation RSS is unavailable: the existing release app has no CLI workload hook and this session lacks input automation for its file picker/drop path.",
+          "A causal WebKitGTK removal savings conclusion requires repeating the Tauri measurement after capturing that matched post-allocation point."
         ],
         "todo": [
-          "Slint RSS spike: RAM tier meter + stat tile at 4Hz.",
-          "Update notes while progressing with completed, missing, and remaining work."
+          "Slint RSS spike complete; follow-up matched Tauri post-allocation measurement remains for later validation."
         ]
       }
     },
