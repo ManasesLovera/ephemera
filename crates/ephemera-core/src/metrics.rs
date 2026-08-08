@@ -4,12 +4,14 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
-use tauri::{AppHandle, Emitter};
 
 /// Latest sampled process RSS, in bytes, updated by the sampler thread.
 /// A plain atomic rather than routing through AppState's mutexes — this value is read
 /// far more often (every metrics tick) than the stores mutate, and it must never block.
 pub static LAST_RSS_BYTES: AtomicU64 = AtomicU64::new(0);
+
+/// Latest sampled process count, updated by the sampler thread.
+pub static LAST_PROCESS_COUNT: AtomicU64 = AtomicU64::new(1);
 
 fn now_millis() -> i64 {
     SystemTime::now()
@@ -52,7 +54,10 @@ fn tree_rss(sys: &System, root_pid: Pid) -> (u64, usize) {
     (total, count)
 }
 
-pub fn spawn_sampler(app: AppHandle, state: Arc<AppState>) {
+pub fn spawn_sampler<F>(state: Arc<AppState>, callback: F) -> std::thread::JoinHandle<()>
+where
+    F: Fn(Metrics) + Send + 'static,
+{
     std::thread::spawn(move || {
         let mut sys = System::new_with_specifics(
             RefreshKind::nothing().with_processes(ProcessRefreshKind::everything()),
@@ -62,6 +67,7 @@ pub fn spawn_sampler(app: AppHandle, state: Arc<AppState>) {
             sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
             let (rss, count) = tree_rss(&sys, pid);
             LAST_RSS_BYTES.store(rss, Ordering::Relaxed);
+            LAST_PROCESS_COUNT.store(count as u64, Ordering::Relaxed);
 
             let ram_bytes = state.ram.lock().unwrap().total_bytes();
             let disk_bytes = state.vault.lock().unwrap().total_bytes();
@@ -82,12 +88,16 @@ pub fn spawn_sampler(app: AppHandle, state: Arc<AppState>) {
                 process_rss_bytes: rss,
                 process_count: count,
             };
-            let _ = app.emit("metrics://tick", &metrics);
+            callback(metrics);
             std::thread::sleep(std::time::Duration::from_millis(250));
         }
-    });
+    })
 }
 
 pub fn sample_rss_now() -> u64 {
     LAST_RSS_BYTES.load(Ordering::Relaxed)
+}
+
+pub fn sample_process_count_now() -> usize {
+    LAST_PROCESS_COUNT.load(Ordering::Relaxed) as usize
 }

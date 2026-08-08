@@ -8,10 +8,6 @@ use std::time::Instant;
 /// Reads `source` in fixed-size chunks and writes each directly to `dest`, never
 /// holding more than one chunk in memory. Peak memory attributable to this operation
 /// is `STREAM_CHUNK_BYTES` regardless of file size — that invariant is the whole point.
-///
-/// `on_progress` is a plain callback (not `tauri::ipc::Channel` directly) so this
-/// function is testable without a running Tauri app — the command wrapper adapts a
-/// real `Channel` to this signature.
 pub fn stream_copy(
     source: &Path,
     dest: &Path,

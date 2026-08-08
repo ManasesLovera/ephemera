@@ -1,35 +1,14 @@
-pub mod cloud_store;
-pub mod commands;
-pub mod db_store;
-pub mod error;
-pub mod metrics;
-pub mod ram_store;
-pub mod state;
-pub mod stream;
-pub mod types;
-pub mod vault;
+pub use ephemera_core::{
+    cloud_store, db_store, error, metrics, ram_store, state, stream, types, vault,
+};
 
-use state::AppState;
+pub mod commands;
+
+use ephemera_core::find_upwards;
+use ephemera_core::state::AppState;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tauri::Manager;
-
-/// Walks upward from `start`, returning the first ancestor directory containing
-/// `filename`. Anchoring the search on the executable's own location (rather than
-/// the process's current working directory) means `.env` and `gcs-key.json` are
-/// found the same way whether the app is launched via `cargo tauri dev` (exe under
-/// `src-tauri/target/debug`) or as a standalone release binary run from anywhere.
-fn find_upwards(start: &Path, filename: &str) -> Option<PathBuf> {
-    let mut dir = Some(start);
-    while let Some(d) = dir {
-        let candidate = d.join(filename);
-        if candidate.is_file() {
-            return Some(candidate);
-        }
-        dir = d.parent();
-    }
-    None
-}
+use tauri::{Emitter, Manager};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -68,13 +47,10 @@ pub fn run() {
                 let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
                     "postgres://ephemera:ephemera_dev_only@localhost:5432/ephemera".to_string()
                 });
-                let db = db_store::DbStore::connect(&database_url).await;
+                let db = ephemera_core::db_store::DbStore::connect(&database_url).await;
 
                 let gcs_key_path =
                     std::env::var("GCS_KEY_PATH").unwrap_or_else(|_| "gcs-key.json".to_string());
-                // GCS_KEY_PATH (whether from .env or its default) is conventionally a bare
-                // filename meant to sit next to .env — resolve it against config_dir rather
-                // than the process's current working directory, which varies by launch method.
                 let gcs_key_path = if Path::new(&gcs_key_path).is_absolute() {
                     gcs_key_path
                 } else {
@@ -85,7 +61,7 @@ pub fn run() {
                 };
                 let gcs_bucket =
                     std::env::var("GCS_BUCKET").unwrap_or_else(|_| "ephemera-vault".to_string());
-                let cloud = cloud_store::CloudStore::load(&gcs_key_path, gcs_bucket);
+                let cloud = ephemera_core::cloud_store::CloudStore::load(&gcs_key_path, gcs_bucket);
                 #[cfg(debug_assertions)]
                 eprintln!(
                     "DEBUG cwd={:?} gcs_key_path={:?} connected={} reason={:?}",
@@ -98,8 +74,11 @@ pub fn run() {
                 let app_state = Arc::new(AppState::new(vault_path, db, cloud));
                 handle.manage(app_state.clone());
 
-                metrics::spawn_sampler(handle.clone(), app_state.clone());
-                state::spawn_slow_metrics_refresher(app_state);
+                let handle_clone = handle.clone();
+                ephemera_core::spawn_sampler(app_state.clone(), move |metrics| {
+                    let _ = handle_clone.emit("metrics://tick", &metrics);
+                });
+                ephemera_core::state::spawn_slow_metrics_refresher(app_state);
             });
 
             Ok(())

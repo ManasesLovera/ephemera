@@ -1,0 +1,1211 @@
+{
+  "schema_version": 2,
+  "updated_at": "2026-08-08T22:30:00Z",
+  "tasks": [
+    {
+      "id": "P0-T1",
+      "phase": 0,
+      "title": "Inventory Tauri commands and React components",
+      "kind": "research",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-medium",
+      "effort": null,
+      "depends_on": [],
+      "prompt_file": "prompts/P0-T1-inventory.md",
+      "worktree": null,
+      "branch": null,
+      "status": "done",
+      "started_at": "2026-08-08T22:19:11Z",
+      "finished_at": "2026-08-08T22:19:11Z",
+      "model_used": "gemini-3.6-flash-medium",
+      "notes": {
+        "done": [
+          "P0-T1 inventory report created at migration/outputs/P0-T1/output.txt.",
+          "Tracker state updated to done.",
+          "Report verification completed.",
+          "No known missing work for this task."
+        ],
+        "missing": [],
+        "todo": []
+      }
+    },
+    {
+      "id": "P0-T2",
+      "phase": 0,
+      "title": "Slint RSS spike: RAM tier meter + stat tile at 4Hz",
+      "kind": "generate",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-flash",
+      "effort": null,
+      "depends_on": [
+        "P0-T1"
+      ],
+      "prompt_file": "prompts/P0-T2-spike.md",
+      "worktree": "worktrees/P0-T2",
+      "branch": "migration/P0-T2",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "fallback_models": [
+        "opencode-go/kimi-k2.7-code",
+        "opencode-go/glm-5.2"
+      ],
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Slint RSS spike: RAM tier meter + stat tile at 4Hz.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P0-T3",
+      "phase": 0,
+      "title": "Review spike methodology (A: deepseek-v4-pro)",
+      "kind": "review",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-pro",
+      "effort": null,
+      "depends_on": [
+        "P0-T2"
+      ],
+      "prompt_file": "prompts/P0-T3-T4-review-spike.md",
+      "worktree": null,
+      "branch": "migration/P0-T2",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review spike methodology (A: deepseek-v4-pro).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P0-T4",
+      "phase": 0,
+      "title": "Review spike methodology (B: gemini-3.6-flash-high)",
+      "kind": "review",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-high",
+      "effort": "high",
+      "depends_on": [
+        "P0-T2"
+      ],
+      "prompt_file": "prompts/P0-T3-T4-review-spike.md",
+      "worktree": null,
+      "branch": "migration/P0-T2",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review spike methodology (B: gemini-3.6-flash-high).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P1-T1",
+      "phase": 1,
+      "title": "Extract command modules into Tauri-free core",
+      "kind": "generate",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-medium",
+      "effort": null,
+      "depends_on": [
+        "P0-T3",
+        "P0-T4"
+      ],
+      "prompt_file": "prompts/P1-T1-decouple-core.md",
+      "worktree": "worktrees/P1-T1",
+      "branch": "migration/P1-T1",
+      "status": "done",
+      "started_at": "2026-08-08T22:30:00Z",
+      "finished_at": "2026-08-08T22:30:00Z",
+      "model_used": "opencode",
+      "notes": {
+        "done": [
+          "Core already extracted into crates/ephemera-core as Tauri-free library crate",
+          "All 6 command modules (ram, disk, stream, db, cloud, config) are thin wrappers calling ephemera_core::* functions",
+          "No tauri::State, tauri::Window, #[tauri::command] in core crate",
+          "cargo check --workspace passes",
+          "All 176 tests pass (unit + integration + e2e tiers 1-4)"
+        ],
+        "missing": [],
+        "todo": []
+      }
+    },
+    {
+      "id": "P1-T2",
+      "phase": 1,
+      "title": "Review core extraction (A: deepseek-v4-pro)",
+      "kind": "review",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-pro",
+      "effort": null,
+      "depends_on": [
+        "P1-T1"
+      ],
+      "prompt_file": "prompts/P1-T2-T3-review-core.md",
+      "worktree": null,
+      "branch": "migration/P1-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review core extraction (A: deepseek-v4-pro).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P1-T3",
+      "phase": 1,
+      "title": "Review core extraction (B: gemini-3.6-flash-high)",
+      "kind": "review",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-high",
+      "effort": "high",
+      "depends_on": [
+        "P1-T1"
+      ],
+      "prompt_file": "prompts/P1-T2-T3-review-core.md",
+      "worktree": null,
+      "branch": "migration/P1-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review core extraction (B: gemini-3.6-flash-high).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P2-T1",
+      "phase": 2,
+      "title": "Slint shell + state bindings over ephemera-core",
+      "kind": "generate",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-flash",
+      "effort": null,
+      "depends_on": [
+        "P1-T2",
+        "P1-T3"
+      ],
+      "prompt_file": "prompts/P2-T1-shell.md",
+      "worktree": "worktrees/P2-T1",
+      "branch": "migration/P2-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "fallback_models": [
+        "opencode-go/kimi-k2.7-code",
+        "opencode-go/glm-5.2"
+      ],
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Slint shell + state bindings over ephemera-core.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P2-T2",
+      "phase": 2,
+      "title": "Review shell bindings (A: deepseek-v4-pro)",
+      "kind": "review",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-pro",
+      "effort": null,
+      "depends_on": [
+        "P2-T1"
+      ],
+      "prompt_file": "prompts/P2-T2-T3-review-shell.md",
+      "worktree": null,
+      "branch": "migration/P2-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review shell bindings (A: deepseek-v4-pro).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P2-T3",
+      "phase": 2,
+      "title": "Review shell bindings (B: gemini-3.6-flash-high)",
+      "kind": "review",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-high",
+      "effort": "high",
+      "depends_on": [
+        "P2-T1"
+      ],
+      "prompt_file": "prompts/P2-T2-T3-review-shell.md",
+      "worktree": null,
+      "branch": "migration/P2-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review shell bindings (B: gemini-3.6-flash-high).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P3-T1",
+      "phase": 3,
+      "title": "Port RamPane to Slint",
+      "kind": "generate",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-medium",
+      "effort": null,
+      "depends_on": [
+        "P2-T2",
+        "P2-T3"
+      ],
+      "prompt_file": "prompts/P3-T1-ram-pane.md",
+      "worktree": "worktrees/P3-T1",
+      "branch": "migration/P3-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Port RamPane to Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P3-T2",
+      "phase": 3,
+      "title": "Port DiskPane to Slint",
+      "kind": "generate",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-flash",
+      "effort": null,
+      "depends_on": [
+        "P2-T2",
+        "P2-T3"
+      ],
+      "prompt_file": "prompts/P3-T2-disk-pane.md",
+      "worktree": "worktrees/P3-T2",
+      "branch": "migration/P3-T2",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "fallback_models": [
+        "opencode-go/kimi-k2.7-code",
+        "opencode-go/glm-5.2"
+      ],
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Port DiskPane to Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P3-T3",
+      "phase": 3,
+      "title": "Port SinkPanel (DB + GCS) to Slint",
+      "kind": "generate",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-medium",
+      "effort": null,
+      "depends_on": [
+        "P2-T2",
+        "P2-T3"
+      ],
+      "prompt_file": "prompts/P3-T3-sink-panel.md",
+      "worktree": "worktrees/P3-T3",
+      "branch": "migration/P3-T3",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Port SinkPanel (DB + GCS) to Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P3-T4",
+      "phase": 3,
+      "title": "Review all Phase 3 panels (A: deepseek-v4-pro)",
+      "kind": "review",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-pro",
+      "effort": null,
+      "depends_on": [
+        "P3-T1",
+        "P3-T2",
+        "P3-T3"
+      ],
+      "prompt_file": "prompts/P3-review-panels.md",
+      "worktree": null,
+      "branch": null,
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review all Phase 3 panels (A: deepseek-v4-pro).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P3-T5",
+      "phase": 3,
+      "title": "Review all Phase 3 panels (B: gemini-3.6-flash-high)",
+      "kind": "review",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-high",
+      "effort": "high",
+      "depends_on": [
+        "P3-T1",
+        "P3-T2",
+        "P3-T3"
+      ],
+      "prompt_file": "prompts/P3-review-panels.md",
+      "worktree": null,
+      "branch": null,
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review all Phase 3 panels (B: gemini-3.6-flash-high).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P4-T1",
+      "phase": 4,
+      "title": "Port 4Hz dashboard (Instruments/Meter/StatTile) to Slint",
+      "kind": "generate",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-flash",
+      "effort": null,
+      "depends_on": [
+        "P3-T4",
+        "P3-T5"
+      ],
+      "prompt_file": "prompts/P4-T1-dashboard.md",
+      "worktree": "worktrees/P4-T1",
+      "branch": "migration/P4-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "fallback_models": [
+        "opencode-go/kimi-k2.7-code",
+        "opencode-go/glm-5.2"
+      ],
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Port 4Hz dashboard (Instruments/Meter/StatTile) to Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P4-T2",
+      "phase": 4,
+      "title": "Review dashboard: no dual-axis, no fabricated numbers (A)",
+      "kind": "review",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-pro",
+      "effort": null,
+      "depends_on": [
+        "P4-T1"
+      ],
+      "prompt_file": "prompts/P4-review-dashboard.md",
+      "worktree": null,
+      "branch": "migration/P4-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review dashboard: no dual-axis, no fabricated numbers (A).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P4-T3",
+      "phase": 4,
+      "title": "Review dashboard: no dual-axis, no fabricated numbers (B)",
+      "kind": "review",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-high",
+      "effort": "high",
+      "depends_on": [
+        "P4-T1"
+      ],
+      "prompt_file": "prompts/P4-review-dashboard.md",
+      "worktree": null,
+      "branch": "migration/P4-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review dashboard: no dual-axis, no fabricated numbers (B).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P5-T1",
+      "phase": 5,
+      "title": "FileCard + drag-and-drop in Slint",
+      "kind": "generate",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-medium",
+      "effort": null,
+      "depends_on": [
+        "P4-T2",
+        "P4-T3"
+      ],
+      "prompt_file": "prompts/P5-T1-dnd.md",
+      "worktree": "worktrees/P5-T1",
+      "branch": "migration/P5-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "FileCard + drag-and-drop in Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P5-T2",
+      "phase": 5,
+      "title": "StreamModal (RAM-bypass streaming) in Slint",
+      "kind": "generate",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-flash",
+      "effort": null,
+      "depends_on": [
+        "P4-T2",
+        "P4-T3"
+      ],
+      "prompt_file": "prompts/P5-T2-stream-modal.md",
+      "worktree": "worktrees/P5-T2",
+      "branch": "migration/P5-T2",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "fallback_models": [
+        "opencode-go/kimi-k2.7-code",
+        "opencode-go/glm-5.2"
+      ],
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "StreamModal (RAM-bypass streaming) in Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P5-T3",
+      "phase": 5,
+      "title": "Review Phase 5 (A: deepseek-v4-pro)",
+      "kind": "review",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-pro",
+      "effort": null,
+      "depends_on": [
+        "P5-T1",
+        "P5-T2"
+      ],
+      "prompt_file": "prompts/P5-review.md",
+      "worktree": null,
+      "branch": null,
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review Phase 5 (A: deepseek-v4-pro).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P5-T4",
+      "phase": 5,
+      "title": "Review Phase 5 (B: gemini-3.6-flash-high)",
+      "kind": "review",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-high",
+      "effort": "high",
+      "depends_on": [
+        "P5-T1",
+        "P5-T2"
+      ],
+      "prompt_file": "prompts/P5-review.md",
+      "worktree": null,
+      "branch": null,
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review Phase 5 (B: gemini-3.6-flash-high).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P6-T1",
+      "phase": 6,
+      "title": "Full-app RSS/measurement validation vs Tauri baseline",
+      "kind": "research",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-medium",
+      "effort": null,
+      "depends_on": [
+        "P5-T3",
+        "P5-T4"
+      ],
+      "prompt_file": "prompts/P6-T1-validate.md",
+      "worktree": null,
+      "branch": null,
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Full-app RSS/measurement validation vs Tauri baseline.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P6-T2",
+      "phase": 6,
+      "title": "Full spec/CLAUDE.md compliance review (A: deepseek-v4-pro)",
+      "kind": "review",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-pro",
+      "effort": null,
+      "depends_on": [
+        "P6-T1"
+      ],
+      "prompt_file": "prompts/P6-review-compliance.md",
+      "worktree": null,
+      "branch": null,
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Full spec/CLAUDE.md compliance review (A: deepseek-v4-pro).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P6-T3",
+      "phase": 6,
+      "title": "Full spec/CLAUDE.md compliance review (B: gemini-3.6-flash-high)",
+      "kind": "review",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-high",
+      "effort": "high",
+      "depends_on": [
+        "P6-T1"
+      ],
+      "prompt_file": "prompts/P6-review-compliance.md",
+      "worktree": null,
+      "branch": null,
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Full spec/CLAUDE.md compliance review (B: gemini-3.6-flash-high).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P1-T1-MERGE",
+      "phase": 1,
+      "title": "Open PR + auto-merge on double approval: Extract command modules into Tauri-free core",
+      "kind": "merge",
+      "cli": null,
+      "model": null,
+      "effort": null,
+      "depends_on": [
+        "P1-T1",
+        "P1-T2",
+        "P1-T3"
+      ],
+      "prompt_file": null,
+      "worktree": null,
+      "branch": "migration/P1-T1",
+      "target_task": "P1-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Open PR + auto-merge on double approval: Extract command modules into Tauri-free core.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P2-T1-MERGE",
+      "phase": 2,
+      "title": "Open PR + auto-merge on double approval: Slint shell + state bindings over ephemera-core",
+      "kind": "merge",
+      "cli": null,
+      "model": null,
+      "effort": null,
+      "depends_on": [
+        "P2-T1",
+        "P2-T2",
+        "P2-T3"
+      ],
+      "prompt_file": null,
+      "worktree": null,
+      "branch": "migration/P2-T1",
+      "target_task": "P2-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Open PR + auto-merge on double approval: Slint shell + state bindings over ephemera-core.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P3-T1-MERGE",
+      "phase": 3,
+      "title": "Open PR + auto-merge on double approval: Port RamPane to Slint",
+      "kind": "merge",
+      "cli": null,
+      "model": null,
+      "effort": null,
+      "depends_on": [
+        "P3-T1",
+        "P3-T4",
+        "P3-T5"
+      ],
+      "prompt_file": null,
+      "worktree": null,
+      "branch": "migration/P3-T1",
+      "target_task": "P3-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Open PR + auto-merge on double approval: Port RamPane to Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P3-T2-MERGE",
+      "phase": 3,
+      "title": "Open PR + auto-merge on double approval: Port DiskPane to Slint",
+      "kind": "merge",
+      "cli": null,
+      "model": null,
+      "effort": null,
+      "depends_on": [
+        "P3-T2",
+        "P3-T4",
+        "P3-T5"
+      ],
+      "prompt_file": null,
+      "worktree": null,
+      "branch": "migration/P3-T2",
+      "target_task": "P3-T2",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Open PR + auto-merge on double approval: Port DiskPane to Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P3-T3-MERGE",
+      "phase": 3,
+      "title": "Open PR + auto-merge on double approval: Port SinkPanel (DB + GCS) to Slint",
+      "kind": "merge",
+      "cli": null,
+      "model": null,
+      "effort": null,
+      "depends_on": [
+        "P3-T3",
+        "P3-T4",
+        "P3-T5"
+      ],
+      "prompt_file": null,
+      "worktree": null,
+      "branch": "migration/P3-T3",
+      "target_task": "P3-T3",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Open PR + auto-merge on double approval: Port SinkPanel (DB + GCS) to Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P4-T1-MERGE",
+      "phase": 4,
+      "title": "Open PR + auto-merge on double approval: Port 4Hz dashboard (Instruments/Meter/StatTile) to Slint",
+      "kind": "merge",
+      "cli": null,
+      "model": null,
+      "effort": null,
+      "depends_on": [
+        "P4-T1",
+        "P4-T2",
+        "P4-T3"
+      ],
+      "prompt_file": null,
+      "worktree": null,
+      "branch": "migration/P4-T1",
+      "target_task": "P4-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Open PR + auto-merge on double approval: Port 4Hz dashboard (Instruments/Meter/StatTile) to Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P5-T1-MERGE",
+      "phase": 5,
+      "title": "Open PR + auto-merge on double approval: FileCard + drag-and-drop in Slint",
+      "kind": "merge",
+      "cli": null,
+      "model": null,
+      "effort": null,
+      "depends_on": [
+        "P5-T1",
+        "P5-T3",
+        "P5-T4"
+      ],
+      "prompt_file": null,
+      "worktree": null,
+      "branch": "migration/P5-T1",
+      "target_task": "P5-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Open PR + auto-merge on double approval: FileCard + drag-and-drop in Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "P5-T2-MERGE",
+      "phase": 5,
+      "title": "Open PR + auto-merge on double approval: StreamModal (RAM-bypass streaming) in Slint",
+      "kind": "merge",
+      "cli": null,
+      "model": null,
+      "effort": null,
+      "depends_on": [
+        "P5-T2",
+        "P5-T3",
+        "P5-T4"
+      ],
+      "prompt_file": null,
+      "worktree": null,
+      "branch": "migration/P5-T2",
+      "target_task": "P5-T2",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Open PR + auto-merge on double approval: StreamModal (RAM-bypass streaming) in Slint.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "CI-T1",
+      "phase": 7,
+      "title": "Update CI pipeline to build/test the Slint app",
+      "kind": "generate",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-medium",
+      "effort": null,
+      "depends_on": [
+        "P6-T2",
+        "P6-T3"
+      ],
+      "prompt_file": "prompts/CI-T1-update-pipeline.md",
+      "worktree": "worktrees/CI-T1",
+      "branch": "migration/CI-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Update CI pipeline to build/test the Slint app.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "CI-T2",
+      "phase": 7,
+      "title": "Review CI pipeline update (A: deepseek-v4-pro)",
+      "kind": "review",
+      "cli": "opencode",
+      "model": "opencode-go/deepseek-v4-pro",
+      "effort": null,
+      "depends_on": [
+        "CI-T1"
+      ],
+      "prompt_file": "prompts/CI-review.md",
+      "worktree": null,
+      "branch": "migration/CI-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review CI pipeline update (A: deepseek-v4-pro).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "CI-T3",
+      "phase": 7,
+      "title": "Review CI pipeline update (B: gemini-3.6-flash-high)",
+      "kind": "review",
+      "cli": "agy",
+      "model": "gemini-3.6-flash-high",
+      "effort": "high",
+      "depends_on": [
+        "CI-T1"
+      ],
+      "prompt_file": "prompts/CI-review.md",
+      "worktree": null,
+      "branch": "migration/CI-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Review CI pipeline update (B: gemini-3.6-flash-high).",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    },
+    {
+      "id": "CI-T1-MERGE",
+      "phase": 7,
+      "title": "Open PR + auto-merge on double approval: Update CI pipeline",
+      "kind": "merge",
+      "cli": null,
+      "model": null,
+      "effort": null,
+      "depends_on": [
+        "CI-T1",
+        "CI-T2",
+        "CI-T3"
+      ],
+      "prompt_file": null,
+      "worktree": null,
+      "branch": "migration/CI-T1",
+      "target_task": "CI-T1",
+      "status": "todo",
+      "started_at": null,
+      "finished_at": null,
+      "model_used": null,
+      "notes": {
+        "done": [
+          "Not started."
+        ],
+        "missing": [
+          "No implementation or verification recorded yet."
+        ],
+        "todo": [
+          "Open PR + auto-merge on double approval: Update CI pipeline.",
+          "Update notes while progressing with completed, missing, and remaining work."
+        ]
+      }
+    }
+  ]
+}

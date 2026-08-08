@@ -1,23 +1,15 @@
 [package]
-name = "ephemera"
+name = "ephemera-core"
 version = "0.2.2"
-description = "A desktop app that teaches RAM vs disk vs database vs cloud storage"
+description = "Pure Rust core logic and storage tiers for Ephemera"
 authors = ["Ephemera"]
 edition = "2021"
 
 [lib]
-name = "ephemera_lib"
-crate-type = ["staticlib", "cdylib", "rlib"]
-
-[build-dependencies]
-tauri-build = { version = "2", features = [] }
+name = "ephemera_core"
+crate-type = ["rlib"]
 
 [dependencies]
-ephemera-core = { path = "../crates/ephemera-core" }
-tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
-tauri-plugin-dialog = "2"
-tauri-plugin-fs = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
