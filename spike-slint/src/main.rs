@@ -55,7 +55,9 @@ fn main() -> Result<(), slint::PlatformError> {
     let timer_buffer = buffer.clone();
     let timer = Timer::default();
     timer.start(TimerMode::Repeated, Duration::from_millis(250), move || {
-        let Some(window) = timer_window.upgrade() else { return };
+        let Some(window) = timer_window.upgrade() else {
+            return;
+        };
         if let Some(ticks) = ticks_until_auto_load.as_mut() {
             if *ticks == 0 {
                 let mut bytes = timer_buffer.borrow_mut();
@@ -71,13 +73,11 @@ fn main() -> Result<(), slint::PlatformError> {
         let size = timer_buffer.borrow().len();
         window.set_meter_progress((size.min(RAM_CAP) as f32) / RAM_CAP as f32);
         window.set_used_text(format_bytes(size).into());
-        window.set_buffer_text(
-            if size == 0 {
-                "No buffer allocated".into()
-            } else {
-                format!("Rust Vec<u8>: {}", format_bytes(size)).into()
-            },
-        );
+        window.set_buffer_text(if size == 0 {
+            "No buffer allocated".into()
+        } else {
+            format!("Rust Vec<u8>: {}", format_bytes(size)).into()
+        });
         window.set_rss_text(
             rss_bytes()
                 .map(|bytes| format!("RSS: {}", format_bytes(bytes as usize)))
