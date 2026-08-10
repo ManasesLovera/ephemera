@@ -1,0 +1,67 @@
+import { Button, HorizontalBox, VerticalBox } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    title: "Ephemera RSS spike";
+    width: 640px;
+    height: 360px;
+    background: #f4f1ea;
+
+    in-out property <float> meter-progress: 0;
+    in-out property <string> used-text: "0 B";
+    in-out property <string> rss-text: "RSS: measuring...";
+    in-out property <string> buffer-text: "No buffer allocated";
+    callback load-buffer();
+    callback clear-buffer();
+
+    VerticalBox {
+        padding: 32px;
+        spacing: 18px;
+
+        Text {
+            text: "RAM · volatile";
+            font-size: 28px;
+            color: #24303a;
+        }
+
+        Rectangle {
+            height: 28px;
+            background: #d8d3c8;
+            border-radius: 4px;
+
+            Rectangle {
+                width: parent.width * root.meter-progress;
+                height: parent.height;
+                background: #287d78;
+                border-radius: 4px;
+            }
+        }
+
+        Text {
+            text: root.used-text + " of 10 MiB";
+            color: #24303a;
+            font-size: 16px;
+        }
+
+        Rectangle {
+            height: 88px;
+            background: #fffdf8;
+            border-color: #c9c1b4;
+            border-width: 1px;
+            border-radius: 6px;
+
+            VerticalBox {
+                padding: 14px;
+                spacing: 4px;
+                Text { text: "APP MEMORY"; color: #68747b; font-size: 12px; }
+                Text { text: root.rss-text; color: #24303a; font-size: 22px; }
+                Text { text: root.buffer-text; color: #68747b; font-size: 12px; }
+            }
+        }
+
+        HorizontalBox {
+            spacing: 10px;
+            Button { text: "Load 50 MiB"; clicked => { root.load-buffer(); } }
+            Button { text: "Clear buffer"; clicked => { root.clear-buffer(); } }
+        }
+    }
+}
