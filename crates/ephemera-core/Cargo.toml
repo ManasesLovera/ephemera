@@ -28,3 +28,8 @@ futures-util = "0.3"
 
 [dev-dependencies]
 tempfile = "3"
+
+# Standalone workspace, same trick as ephemera-app: a stray parent workspace
+# (e.g. the pre-migration root Cargo.toml that still lists the deleted
+# src-tauri as a member) must not swallow this crate and break its builds.
+[workspace]
