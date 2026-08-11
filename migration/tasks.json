@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated_at": "2026-08-11T11:19:45Z",
+  "updated_at": "2026-08-11T12:44:34Z",
   "tasks": [
     {
       "id": "P0-T1",
@@ -641,13 +641,15 @@
       "prompt_file": "prompts/P5-T1-dnd.md",
       "worktree": "worktrees/P5-T1",
       "branch": "migration/P5-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T11:21:51Z",
+      "finished_at": "2026-08-11T12:00:42Z",
+      "model_used": "google/gemini-3.6-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -656,7 +658,8 @@
           "FileCard + drag-and-drop in Slint.",
           "Update notes while progressing with completed, missing, and remaining work."
         ]
-      }
+      },
+      "tests_status": "passed"
     },
     {
       "id": "P5-T2",
@@ -664,7 +667,7 @@
       "title": "StreamModal (RAM-bypass streaming) in Slint",
       "kind": "generate",
       "cli": "opencode",
-      "model": "opencode-go/deepseek-v4-flash",
+      "model": "google/gemini-3.6-flash",
       "effort": null,
       "depends_on": [
         "P4-T2",
@@ -673,26 +676,36 @@
       "prompt_file": "prompts/P5-T2-stream-modal.md",
       "worktree": "worktrees/P5-T2",
       "branch": "migration/P5-T2",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T12:14:11Z",
+      "finished_at": "2026-08-11T12:29:59Z",
       "fallback_models": [
         "opencode-go/kimi-k2.7-code",
         "opencode-go/glm-5.2"
       ],
-      "model_used": null,
+      "model_used": "google/gemini-3.6-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task dispatched and execution started.",
+          "Task dispatched and execution started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification.",
+          "Manually rebased onto migration/P5-T1 (merged first); resolved a single additive conflict in app.slint (drag-avatar overlay + StreamModal both belong, back-to-back). cargo build + 8/8 tests pass."
         ],
         "missing": [
-          "No implementation or verification recorded yet."
+          "No implementation or verification recorded yet.",
+          "Task execution failed; inspect the task log before retrying.",
+          "Task execution failed; inspect the task log before retrying.",
+          "Task execution failed; inspect the task log before retrying."
         ],
         "todo": [
           "StreamModal (RAM-bypass streaming) in Slint.",
           "Update notes while progressing with completed, missing, and remaining work."
         ]
-      }
+      },
+      "tests_status": "passed"
     },
     {
       "id": "P5-T3",
@@ -709,13 +722,15 @@
       "prompt_file": "prompts/P5-review.md",
       "worktree": null,
       "branch": null,
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T12:31:08Z",
+      "finished_at": "2026-08-11T12:37:59Z",
+      "model_used": "opencode-go/deepseek-v4-pro",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -741,13 +756,15 @@
       "prompt_file": "prompts/P5-review.md",
       "worktree": null,
       "branch": null,
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T12:31:08Z",
+      "finished_at": "2026-08-11T12:38:35Z",
+      "model_used": "google/gemini-3.6-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -1075,13 +1092,14 @@
       "worktree": null,
       "branch": "migration/P5-T1",
       "target_task": "P5-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T12:39:20Z",
+      "finished_at": "2026-08-11T12:39:38Z",
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -1109,13 +1127,14 @@
       "worktree": null,
       "branch": "migration/P5-T2",
       "target_task": "P5-T2",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T12:44:20Z",
+      "finished_at": "2026-08-11T12:44:34Z",
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started."
         ],
         "missing": [
           "No implementation or verification recorded yet."
