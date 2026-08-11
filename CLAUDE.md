@@ -22,6 +22,9 @@ gaps to pick up next. Then the rest of `docs/` for the full spec:
 8. `docs/07-streaming.md` — the RAM-bypass streaming path
 9. `docs/08-database-tier.md` — Postgres tier
 10. `docs/09-gcs-tier.md` — cloud tier + GCP setup guide
+11. `docs/11-background-agents-guide.md` — how a background agent should use
+    the sqlite task tracker (`migration/tasks.db` + `migration/tasks.sh`) to
+    find and perform known pending work
 
 ## Git & release workflow — read before touching git
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Dispatch one migration task from tasks.json to its assigned CLI/model.
+# Dispatch one migration task from tasks.db to its assigned CLI/model.
 # Meant to be invoked itself as a backgrounded process by the orchestrating
 # Claude session, so completion shows up as a task notification rather than
 # needing a poll loop here.
@@ -16,14 +16,17 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$ROOT/.." && pwd)"
-TASKS="$ROOT/tasks.json"
+DB="$ROOT/tasks.db"
 # Review tasks may run concurrently. Keep tracker read/modify/move operations
 # serialized without adding lock state to the repository.
-TASKS_LOCK="${TMPDIR:-/tmp}/ephemera-migration-tasks.lock"
+TASKS_LOCK="${TMPDIR:-/tmp}/ephemera-tasks.lock"
+
+sq() { ( flock -x 9; sqlite3 "$DB" "$@" ) 9>"$TASKS_LOCK"; }
+esc() { printf '%s' "${1//\'/\'\'}"; }
 
 TASK_ID="${1:?usage: dispatch.sh <task-id>}"
 
-task=$(jq -c --arg id "$TASK_ID" '.tasks[] | select(type=="object" and .id==$id)' "$TASKS")
+task=$(sq -json "SELECT * FROM tasks WHERE id='$(esc "$TASK_ID")';" | jq '.[0] // empty')
 if [ -z "$task" ]; then
   echo "unknown task id: $TASK_ID" >&2
   exit 1
@@ -38,61 +41,36 @@ worktree_rel=$(jq -r '.worktree // empty' <<<"$task")
 branch=$(jq -r '.branch // empty' <<<"$task")
 target_task=$(jq -r '.target_task // empty' <<<"$task")
 
-mapfile -t fallback_models < <(jq -r '.fallback_models // [] | .[]' <<<"$task")
+mapfile -t fallback_models < <(sq "SELECT model FROM task_fallback_models WHERE task_id='$(esc "$TASK_ID")' ORDER BY position;")
 candidate_models=("$model" "${fallback_models[@]}")
 
-# Every dependency must be "done" before we run. `pending` remains accepted for
-# trackers created before the `todo` state was introduced.
-unmet=$(jq -r --arg id "$TASK_ID" '
-  ((.tasks[] | select(type=="object" and .id==$id) | .depends_on) // []) as $deps
-  | [ .tasks[] | select(type=="object" and (.id as $t | $deps | index($t)) != null and .status != "done") | .id ]
-  | join(",")
-' "$TASKS")
+# Every dependency must be "done" before we run.
+unmet=$(sq -separator ',' "
+  SELECT d.depends_on FROM task_depends d
+  JOIN tasks t ON t.id = d.depends_on
+  WHERE d.task_id='$(esc "$TASK_ID")' AND t.status != 'done';
+")
 if [ -n "$unmet" ]; then
   echo "task $TASK_ID has unmet dependencies: $unmet" >&2
   exit 1
 fi
 
 mark_status() {
-  local status="$1" ts_field="$2"
-  (
-    flock -x 9
-    local tmp
-    tmp=$(mktemp)
-    jq --arg id "$TASK_ID" --arg st "$status" --arg tf "$ts_field" --arg ts "$(date -u +%FT%TZ)" '
-      .updated_at = $ts
-      | (.tasks[] | select(type=="object" and .id==$id) | .status) = $st
-      | (.tasks[] | select(type=="object" and .id==$id) | .[$tf]) = $ts
-    ' "$TASKS" > "$tmp"
-    mv "$tmp" "$TASKS"
-  ) 9>"$TASKS_LOCK"
+  local status="$1" ts_field="$2" ts
+  ts="$(date -u +%FT%TZ)"
+  sq "UPDATE tasks SET status='$(esc "$status")', updated_at='$ts', \"$ts_field\"='$ts' WHERE id='$(esc "$TASK_ID")';"
 }
 
 mark_field() {
   local field="$1" value="$2"
-  (
-    flock -x 9
-    local tmp
-    tmp=$(mktemp)
-    jq --arg id "$TASK_ID" --arg f "$field" --arg v "$value" '
-      (.tasks[] | select(type=="object" and .id==$id) | .[$f]) = $v
-    ' "$TASKS" > "$tmp"
-    mv "$tmp" "$TASKS"
-  ) 9>"$TASKS_LOCK"
+  sq "UPDATE tasks SET \"$field\"='$(esc "$value")', updated_at='$(date -u +%FT%TZ)' WHERE id='$(esc "$TASK_ID")';"
 }
 
 mark_note() {
-  local section="$1" value="$2"
-  (
-    flock -x 9
-    local tmp
-    tmp=$(mktemp)
-    jq --arg id "$TASK_ID" --arg section "$section" --arg value "$value" '
-      (.tasks[] | select(type=="object" and .id==$id) | .notes) //= {done: [], missing: [], todo: []}
-      | (.tasks[] | select(type=="object" and .id==$id) | .notes[$section]) += [$value]
-    ' "$TASKS" > "$tmp"
-    mv "$tmp" "$TASKS"
-  ) 9>"$TASKS_LOCK"
+  local section="$1" value="$2" next_pos
+  next_pos=$(sq "SELECT COALESCE(MAX(position)+1, 0) FROM task_notes WHERE task_id='$(esc "$TASK_ID")' AND kind='$(esc "$section")';")
+  sq "INSERT INTO task_notes (task_id, kind, position, text) VALUES ('$(esc "$TASK_ID")', '$(esc "$section")', $next_pos, '$(esc "$value")');"
+  sq "UPDATE tasks SET updated_at='$(date -u +%FT%TZ)' WHERE id='$(esc "$TASK_ID")';"
 }
 
 mkdir -p "$ROOT/logs" "$ROOT/outputs/$TASK_ID"

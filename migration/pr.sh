@@ -6,12 +6,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$ROOT/.." && pwd)"
-TASKS="$ROOT/tasks.json"
+DB="$ROOT/tasks.db"
+
+esc() { printf '%s' "${1//\'/\'\'}"; }
 
 ACTION="${1:?usage: pr.sh <open|merge> <generation-task-id>}"
 TASK_ID="${2:?usage: pr.sh <open|merge> <generation-task-id>}"
 
-task=$(jq -c --arg id "$TASK_ID" '.tasks[] | select(.id==$id)' "$TASKS")
+task=$(sqlite3 -json "$DB" "SELECT * FROM tasks WHERE id='$(esc "$TASK_ID")';" | jq '.[0] // empty')
 [ -n "$task" ] || { echo "unknown task id: $TASK_ID" >&2; exit 1; }
 
 branch=$(jq -r '.branch' <<<"$task")
@@ -36,10 +38,13 @@ build_body() {
     echo "## Review verdicts"
     echo
     # every review task whose depends_on includes this task id
-    jq -r --arg id "$TASK_ID" '
-      [ .tasks[] | select(.kind=="review" and (.depends_on | index($id)) != null) ] as $reviews
-      | $reviews[] | "- \(.id) (\(.model)): see migration/logs/\(.id).log"
-    ' "$TASKS"
+    sqlite3 -separator '|' "$DB" "
+      SELECT t.id, t.model FROM tasks t
+      JOIN task_depends d ON d.task_id = t.id
+      WHERE t.kind='review' AND d.depends_on='$(esc "$TASK_ID")';
+    " | while IFS='|' read -r rid rmodel; do
+      echo "- $rid ($rmodel): see migration/logs/$rid.log"
+    done
   } > "$pr_body_file"
 }
 
@@ -67,15 +72,17 @@ case "$ACTION" in
       exit 1
     fi
 
-    review_ids=$(jq -r --arg id "$TASK_ID" '
-      [ .tasks[] | select(.kind=="review" and (.depends_on | index($id)) != null) | .id ] | .[]
-    ' "$TASKS")
+    review_ids=$(sqlite3 "$DB" "
+      SELECT t.id FROM tasks t
+      JOIN task_depends d ON d.task_id = t.id
+      WHERE t.kind='review' AND d.depends_on='$(esc "$TASK_ID")';
+    ")
     if [ -z "$review_ids" ]; then
       echo "BLOCKED: no review tasks found for $TASK_ID — refusing to merge $branch" >&2
       exit 1
     fi
     for rid in $review_ids; do
-      rstatus=$(jq -r --arg id "$rid" '.tasks[] | select(.id==$id) | .status' "$TASKS")
+      rstatus=$(sqlite3 "$DB" "SELECT status FROM tasks WHERE id='$(esc "$rid")';")
       if [ "$rstatus" != "done" ]; then
         echo "BLOCKED: review $rid status is '$rstatus', not 'done' — refusing to merge $branch" >&2
         exit 1

@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
-# Quick status table for the migration task tracker.
+# Quick status table for the task tracker. Thin wrapper over tasks.sh, kept
+# as its own entry point since it predates tasks.sh and other tooling/muscle
+# memory still calls it directly.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-jq -r '
-  ["ID","PHASE","KIND","STATUS","CLI/MODEL","TITLE","NEXT TODO"],
-  (.tasks[] | [.id, (.phase|tostring), .kind, .status, (.cli+"/"+.model), .title, ((.notes.todo // ["notes missing"]) | first)])
-  | @tsv
-' "$ROOT/tasks.json" | column -t -s $'\t'
+exec "$ROOT/tasks.sh" list "$@"
