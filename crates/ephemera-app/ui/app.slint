@@ -87,6 +87,26 @@ export struct FileTableRow {
 }
 
 // ---------------------------------------------------------------------------
+// Drag & Drop global state model.
+// ---------------------------------------------------------------------------
+
+export global DragState {
+    in-out property <bool> active: false;
+    in-out property <string> file-id: "";
+    in-out property <string> file-name: "";
+    in-out property <int> file-size: 0;
+    in-out property <string> file-size-formatted: "";
+    in-out property <color> file-color: #2a78d6;
+    in-out property <string> source-tier: ""; // "ram" | "disk"
+    in-out property <length> pointer-x: 0px;
+    in-out property <length> pointer-y: 0px;
+
+    in-out property <string> hover-target: "none"; // "none" | "ram" | "disk" | "db" | "cloud"
+    in-out property <bool> hover-valid: false;
+    in-out property <string> hover-reason: "";
+}
+
+// ---------------------------------------------------------------------------
 // KPI row stat tile.
 // ---------------------------------------------------------------------------
 
@@ -198,6 +218,8 @@ component Meter inherits VerticalBox {
     in property <string> used-text: "0 B";
     in property <string> cap-text: "10.0 MB";
     in property <[FileMeta]> segments;
+    in property <int> preview-add-bytes: 0;
+    in property <color> preview-add-color: #1baf7a;
 
     spacing: 4px;
     padding: 0px;
@@ -217,8 +239,16 @@ component Meter inherits VerticalBox {
                 background: seg.color;
             }
 
-            if cap > used: Rectangle {
-                horizontal-stretch: max(0, cap - used);
+            if preview-add-bytes > 0: Rectangle {
+                horizontal-stretch: max(1, preview-add-bytes);
+                background: preview-add-color.transparentize(0.4);
+                border-width: 1px;
+                border-color: preview-add-color;
+                border-radius: 2px;
+            }
+
+            if cap > (used + preview-add-bytes): Rectangle {
+                horizontal-stretch: max(0, cap - (used + preview-add-bytes));
                 background: transparent;
             }
         }
@@ -252,11 +282,76 @@ component DiskFileCard inherits Rectangle {
     callback save-to-cloud(string);
     callback delete-from-disk(string);
 
-    background: #fffdf8;
-    border-color: #e1e0d9;
+    property <bool> is-dragged: DragState.active && DragState.file-id == meta.id && DragState.source-tier == "disk";
+
+    background: is-dragged ? #f4f1ea : (card-touch.has-hover ? #fbfaf5 : #fffdf8);
+    border-color: is-dragged ? #eb6834 : (card-touch.has-hover ? #c3c2b7 : #e1e0d9);
     border-width: 1px;
     border-radius: 8px;
     height: 36px;
+    opacity: is-dragged ? 0.35 : 1.0;
+
+    property <length> press-start-x: 0px;
+    property <length> press-start-y: 0px;
+    property <bool> tracking-press: false;
+    property <length> cur-x: 0px;
+    property <length> cur-y: 0px;
+    property <length> dx: 0px;
+    property <length> dy: 0px;
+
+    card-touch := TouchArea {
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down) {
+                root.press-start-x = self.absolute-position.x + self.mouse-x;
+                root.press-start-y = self.absolute-position.y + self.mouse-y;
+                root.tracking-press = true;
+            } else if (ev.kind == PointerEventKind.up || ev.kind == PointerEventKind.cancel) {
+                if (root.tracking-press) {
+                    root.tracking-press = false;
+                    if (DragState.active && DragState.file-id == meta.id) {
+                        if (DragState.hover-valid) {
+                            if (DragState.hover-target == "db") {
+                                root.save-to-db(meta.id);
+                            } else if (DragState.hover-target == "cloud") {
+                                root.save-to-cloud(meta.id);
+                            }
+                        }
+                        DragState.active = false;
+                        DragState.hover-target = "none";
+                        DragState.hover-valid = false;
+                        DragState.hover-reason = "";
+                    }
+                }
+            }
+        }
+        moved => {
+            if (self.pressed && root.tracking-press) {
+                root.cur-x = self.absolute-position.x + self.mouse-x;
+                root.cur-y = self.absolute-position.y + self.mouse-y;
+                root.dx = root.cur-x > root.press-start-x ? root.cur-x - root.press-start-x : root.press-start-x - root.cur-x;
+                root.dy = root.cur-y > root.press-start-y ? root.cur-y - root.press-start-y : root.press-start-y - root.cur-y;
+
+                if (!DragState.active) {
+                    if (root.dx > 4px || root.dy > 4px) {
+                        DragState.file-id = meta.id;
+                        DragState.file-name = meta.name;
+                        DragState.file-size = meta.size;
+                        DragState.file-size-formatted = meta.size-formatted;
+                        DragState.file-color = meta.color;
+                        DragState.source-tier = "disk";
+                        DragState.pointer-x = root.cur-x;
+                        DragState.pointer-y = root.cur-y;
+                        DragState.active = true;
+                    }
+                } else {
+                    if (DragState.file-id == meta.id) {
+                        DragState.pointer-x = root.cur-x;
+                        DragState.pointer-y = root.cur-y;
+                    }
+                }
+            }
+        }
+    }
 
     HorizontalLayout {
         padding-left: 8px;
@@ -264,6 +359,14 @@ component DiskFileCard inherits Rectangle {
         padding-top: 4px;
         padding-bottom: 4px;
         spacing: 8px;
+
+        // Drag handle indicator
+        Text {
+            text: "⋮⋮";
+            color: #b7b6ae;
+            font-size: 13px;
+            vertical-alignment: center;
+        }
 
         // Swatch
         Rectangle {
@@ -320,11 +423,78 @@ component FileCard inherits Rectangle {
     callback save-to-cloud(string);
     callback delete-from-ram(string);
 
-    background: #fffdf8;
-    border-color: #e1e0d9;
+    property <bool> is-dragged: DragState.active && DragState.file-id == meta.id && DragState.source-tier == "ram";
+
+    background: is-dragged ? #f4f1ea : (card-touch.has-hover ? #fbfaf5 : #fffdf8);
+    border-color: is-dragged ? #2a78d6 : (card-touch.has-hover ? #c3c2b7 : #e1e0d9);
     border-width: 1px;
     border-radius: 8px;
     height: 36px;
+    opacity: is-dragged ? 0.35 : 1.0;
+
+    property <length> press-start-x: 0px;
+    property <length> press-start-y: 0px;
+    property <bool> tracking-press: false;
+    property <length> cur-x: 0px;
+    property <length> cur-y: 0px;
+    property <length> dx: 0px;
+    property <length> dy: 0px;
+
+    card-touch := TouchArea {
+        pointer-event(ev) => {
+            if (ev.kind == PointerEventKind.down) {
+                root.press-start-x = self.absolute-position.x + self.mouse-x;
+                root.press-start-y = self.absolute-position.y + self.mouse-y;
+                root.tracking-press = true;
+            } else if (ev.kind == PointerEventKind.up || ev.kind == PointerEventKind.cancel) {
+                if (root.tracking-press) {
+                    root.tracking-press = false;
+                    if (DragState.active && DragState.file-id == meta.id) {
+                        if (DragState.hover-valid) {
+                            if (DragState.hover-target == "disk") {
+                                root.persist-to-disk(meta.id);
+                            } else if (DragState.hover-target == "db") {
+                                root.save-to-db(meta.id);
+                            } else if (DragState.hover-target == "cloud") {
+                                root.save-to-cloud(meta.id);
+                            }
+                        }
+                        DragState.active = false;
+                        DragState.hover-target = "none";
+                        DragState.hover-valid = false;
+                        DragState.hover-reason = "";
+                    }
+                }
+            }
+        }
+        moved => {
+            if (self.pressed && root.tracking-press) {
+                root.cur-x = self.absolute-position.x + self.mouse-x;
+                root.cur-y = self.absolute-position.y + self.mouse-y;
+                root.dx = root.cur-x > root.press-start-x ? root.cur-x - root.press-start-x : root.press-start-x - root.cur-x;
+                root.dy = root.cur-y > root.press-start-y ? root.cur-y - root.press-start-y : root.press-start-y - root.cur-y;
+
+                if (!DragState.active) {
+                    if (root.dx > 4px || root.dy > 4px) {
+                        DragState.file-id = meta.id;
+                        DragState.file-name = meta.name;
+                        DragState.file-size = meta.size;
+                        DragState.file-size-formatted = meta.size-formatted;
+                        DragState.file-color = meta.color;
+                        DragState.source-tier = "ram";
+                        DragState.pointer-x = root.cur-x;
+                        DragState.pointer-y = root.cur-y;
+                        DragState.active = true;
+                    }
+                } else {
+                    if (DragState.file-id == meta.id) {
+                        DragState.pointer-x = root.cur-x;
+                        DragState.pointer-y = root.cur-y;
+                    }
+                }
+            }
+        }
+    }
 
     HorizontalLayout {
         padding-left: 8px;
@@ -332,6 +502,14 @@ component FileCard inherits Rectangle {
         padding-top: 4px;
         padding-bottom: 4px;
         spacing: 8px;
+
+        // Drag handle indicator
+        Text {
+            text: "⋮⋮";
+            color: #b7b6ae;
+            font-size: 13px;
+            vertical-alignment: center;
+        }
 
         // Swatch
         Rectangle {
@@ -399,9 +577,13 @@ component RamPane inherits Rectangle {
     callback save-to-cloud(string);
     callback delete-from-ram(string);
 
-    background: #fffdf8;
-    border-color: #c9c1b4;
-    border-width: 1px;
+    property <bool> is-drop-target: DragState.active && DragState.hover-target == "ram";
+    property <bool> drop-valid: DragState.hover-valid;
+    property <string> drop-reason: DragState.hover-reason;
+
+    background: is-drop-target ? #fde8e8 : #fffdf8;
+    border-color: is-drop-target ? #d03b3b : #c9c1b4;
+    border-width: is-drop-target ? 2px : 1px;
     border-radius: 12px;
 
     VerticalBox {
@@ -434,9 +616,9 @@ component RamPane inherits Rectangle {
 
         Rectangle {
             height: 70px;
-            background: drop-touch.has-hover ? #f4f1ea : #f9f9f7;
+            background: is-drop-target ? #fce0e0 : (drop-touch.has-hover ? #f4f1ea : #f9f9f7);
             border-width: 2px;
-            border-color: drop-touch.has-hover ? #2a78d6 : #c3c2b7;
+            border-color: is-drop-target ? #d03b3b : (drop-touch.has-hover ? #2a78d6 : #c3c2b7);
             border-radius: 10px;
 
             drop-touch := TouchArea {
@@ -444,9 +626,10 @@ component RamPane inherits Rectangle {
             }
 
             Text {
-                text: files.length == 0 ? "drop files here or click to browse" : files.length + " file(s) in RAM";
-                color: #898781;
+                text: is-drop-target ? drop-reason : (files.length == 0 ? "drop files here or click to browse" : files.length + " file(s) in RAM");
+                color: is-drop-target ? #d03b3b : #898781;
                 font-size: 13px;
+                font-weight: is-drop-target ? 600 : 400;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
@@ -508,9 +691,14 @@ component DiskPane inherits Rectangle {
     callback save-to-cloud(string);
     callback delete-from-disk(string);
 
-    background: #fffdf8;
-    border-color: #c9c1b4;
-    border-width: 1px;
+    property <bool> is-drop-target: DragState.active && DragState.hover-target == "disk";
+    property <bool> drop-valid: DragState.hover-valid;
+    property <string> drop-reason: DragState.hover-reason;
+    property <int> preview-add-bytes: DragState.active && is-drop-target && drop-valid ? DragState.file-size : 0;
+
+    background: is-drop-target ? (drop-valid ? #e8f5e9 : #fde8e8) : #fffdf8;
+    border-color: is-drop-target ? (drop-valid ? #1baf7a : #d03b3b) : (DragState.active && DragState.source-tier == "ram" ? #2a78d6 : #c9c1b4);
+    border-width: (is-drop-target || (DragState.active && DragState.source-tier == "ram")) ? 2px : 1px;
     border-radius: 12px;
 
     VerticalBox {
@@ -539,19 +727,22 @@ component DiskPane inherits Rectangle {
             used-text: used-text;
             cap-text: cap-text;
             segments: segments;
+            preview-add-bytes: preview-add-bytes;
+            preview-add-color: DragState.file-color;
         }
 
         Rectangle {
             height: 70px;
-            background: #f9f9f7;
+            background: is-drop-target ? (drop-valid ? #c8e6c9 : #fce0e0) : #f9f9f7;
             border-width: 2px;
-            border-color: #c3c2b7;
+            border-color: is-drop-target ? (drop-valid ? #1baf7a : #d03b3b) : #c3c2b7;
             border-radius: 10px;
 
             Text {
-                text: files.length == 0 ? "drag from RAM to keep" : files.length + " file(s) on disk";
-                color: #898781;
+                text: is-drop-target ? drop-reason : (files.length == 0 ? "drag from RAM to keep" : files.length + " file(s) on disk");
+                color: is-drop-target ? (drop-valid ? #1b5e20 : #d03b3b) : #898781;
                 font-size: 13px;
+                font-weight: is-drop-target ? 600 : 400;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
@@ -676,6 +867,7 @@ component SinkFileCard inherits Rectangle {
 component SinkPanel inherits Rectangle {
     in property <string> title;
     in property <string> subtitle;
+    in property <string> panel-tier; // "db" | "cloud"
     in property <bool> connected;
     in property <int> used-bytes;
     in property <int> cap-bytes: 104857600;
@@ -688,9 +880,14 @@ component SinkPanel inherits Rectangle {
 
     callback delete-file(string);
 
-    background: #fffdf8;
-    border-color: #c9c1b4;
-    border-width: 1px;
+    property <bool> is-drop-target: DragState.active && DragState.hover-target == panel-tier;
+    property <bool> drop-valid: DragState.hover-valid;
+    property <string> drop-reason: DragState.hover-reason;
+    property <int> preview-add-bytes: DragState.active && is-drop-target && drop-valid ? DragState.file-size : 0;
+
+    background: is-drop-target ? (drop-valid ? #e8f5e9 : #fde8e8) : #fffdf8;
+    border-color: is-drop-target ? (drop-valid ? #1baf7a : #d03b3b) : #c9c1b4;
+    border-width: is-drop-target ? 2px : 1px;
     border-radius: 12px;
 
     VerticalBox {
@@ -711,6 +908,15 @@ component SinkPanel inherits Rectangle {
                 text: subtitle;
                 color: #68747b;
                 font-size: 11px;
+                vertical-alignment: center;
+            }
+            if is-drop-target: Text {
+                text: drop-reason;
+                color: drop-valid ? #1b5e20 : #d03b3b;
+                font-size: 11px;
+                font-weight: 600;
+                horizontal-stretch: 1;
+                horizontal-alignment: right;
                 vertical-alignment: center;
             }
         }
@@ -744,12 +950,27 @@ component SinkPanel inherits Rectangle {
                 border-radius: 6px;
                 clip: true;
 
-                if used-bytes > 0 : Rectangle {
-                    x: 0px;
-                    y: 0px;
-                    width: parent.width * Math.max(0.01, Math.min(1.0, (used-bytes * 1.0) / (cap-bytes * 1.0)));
-                    height: 100%;
-                    background: #008300;
+                HorizontalLayout {
+                    padding: 0px;
+                    spacing: 2px;
+
+                    if used-bytes > 0: Rectangle {
+                        horizontal-stretch: max(1, used-bytes);
+                        background: #008300;
+                    }
+
+                    if preview-add-bytes > 0: Rectangle {
+                        horizontal-stretch: max(1, preview-add-bytes);
+                        background: DragState.file-color.transparentize(0.4);
+                        border-width: 1px;
+                        border-color: DragState.file-color;
+                        border-radius: 2px;
+                    }
+
+                    if cap-bytes > (used-bytes + preview-add-bytes): Rectangle {
+                        horizontal-stretch: max(0, cap-bytes - (used-bytes + preview-add-bytes));
+                        background: transparent;
+                    }
                 }
             }
 
@@ -760,12 +981,13 @@ component SinkPanel inherits Rectangle {
                     text: used-text;
                     color: #52514e;
                     font-size: 11px;
-                    horizontal-stretch: 1;
+                    horizontal-alignment: left;
                 }
                 Text {
                     text: "of " + cap-text;
                     color: #52514e;
                     font-size: 11px;
+                    horizontal-alignment: right;
                 }
             }
 
@@ -1065,6 +1287,90 @@ export component AppWindow inherits Window {
     callback delete-from-disk(string);
     callback clear-error();
 
+    // Drag target tracking logic
+    property <bool> pointer-in-ram: DragState.active &&
+        DragState.pointer-x >= ram-pane.absolute-position.x &&
+        DragState.pointer-x <= ram-pane.absolute-position.x + ram-pane.width &&
+        DragState.pointer-y >= ram-pane.absolute-position.y &&
+        DragState.pointer-y <= ram-pane.absolute-position.y + ram-pane.height;
+
+    property <bool> pointer-in-disk: DragState.active &&
+        DragState.pointer-x >= disk-pane.absolute-position.x &&
+        DragState.pointer-x <= disk-pane.absolute-position.x + disk-pane.width &&
+        DragState.pointer-y >= disk-pane.absolute-position.y &&
+        DragState.pointer-y <= disk-pane.absolute-position.y + disk-pane.height;
+
+    property <bool> pointer-in-db: DragState.active &&
+        DragState.pointer-x >= db-panel.absolute-position.x &&
+        DragState.pointer-x <= db-panel.absolute-position.x + db-panel.width &&
+        DragState.pointer-y >= db-panel.absolute-position.y &&
+        DragState.pointer-y <= db-panel.absolute-position.y + db-panel.height;
+
+    property <bool> pointer-in-cloud: DragState.active &&
+        DragState.pointer-x >= cloud-panel.absolute-position.x &&
+        DragState.pointer-x <= cloud-panel.absolute-position.x + cloud-panel.width &&
+        DragState.pointer-y >= cloud-panel.absolute-position.y &&
+        DragState.pointer-y <= cloud-panel.absolute-position.y + cloud-panel.height;
+
+    property <string> current-hover-target: pointer-in-ram ? "ram" : (
+        pointer-in-disk ? "disk" : (
+            pointer-in-db ? "db" : (
+                pointer-in-cloud ? "cloud" : "none"
+            )
+        )
+    );
+
+    property <bool> current-hover-valid:
+        current-hover-target == "disk" ? (
+            DragState.source-tier == "ram" && (root.metrics.disk-store-bytes + DragState.file-size <= root.metrics.disk-cap)
+        ) : (
+            current-hover-target == "db" ? (
+                root.db-status.connected && (root.db-status.logical-bytes + DragState.file-size <= root.db-status.cap)
+            ) : (
+                current-hover-target == "cloud" ? (
+                    root.cloud-status.connected && (root.cloud-status.bytes-used + DragState.file-size <= root.cloud-status.cap)
+                ) : false
+            )
+        );
+
+    property <string> current-hover-reason:
+        current-hover-target == "ram" ? (
+            DragState.source-tier == "disk" ? "One-way rule: cannot move files back to RAM" : "Already in RAM"
+        ) : (
+            current-hover-target == "disk" ? (
+                DragState.source-tier == "disk" ? "Already on Disk" : (
+                    root.metrics.disk-store-bytes + DragState.file-size > root.metrics.disk-cap ?
+                        "Disk quota exceeded — file cannot fit" : "Drop to persist to Disk"
+                )
+            ) : (
+                current-hover-target == "db" ? (
+                    !root.db-status.connected ? "Database offline" : (
+                        root.db-status.logical-bytes + DragState.file-size > root.db-status.cap ?
+                            "Database quota exceeded — file cannot fit" : "Drop to save to Database"
+                    )
+                ) : (
+                    current-hover-target == "cloud" ? (
+                        !root.cloud-status.connected ? "Cloud storage offline" : (
+                            root.cloud-status.bytes-used + DragState.file-size > root.cloud-status.cap ?
+                                "Cloud quota exceeded — file cannot fit" : "Drop to save to Cloud"
+                        )
+                    ) : ""
+                )
+            )
+        );
+
+    changed current-hover-target => {
+        DragState.hover-target = root.current-hover-target;
+        DragState.hover-valid = root.current-hover-valid;
+        DragState.hover-reason = root.current-hover-reason;
+    }
+    changed current-hover-valid => {
+        DragState.hover-valid = root.current-hover-valid;
+    }
+    changed current-hover-reason => {
+        DragState.hover-reason = root.current-hover-reason;
+    }
+
     VerticalBox {
         padding: 16px;
         spacing: 12px;
@@ -1139,7 +1445,7 @@ export component AppWindow inherits Window {
         }
 
         HorizontalBox {
-            RamPane {
+            ram-pane := RamPane {
                 used-text: root.ram-used-text;
                 cap-text: root.ram-cap-text;
                 used-bytes: root.metrics.ram-store-bytes;
@@ -1154,7 +1460,7 @@ export component AppWindow inherits Window {
                 save-to-cloud(id) => { root.save-to-cloud(id); }
                 delete-from-ram(id) => { root.delete-from-ram(id); }
             }
-            DiskPane {
+            disk-pane := DiskPane {
                 used-text: root.disk-used-text;
                 cap-text: root.disk-cap-text;
                 used-bytes: root.metrics.disk-store-bytes;
@@ -1172,9 +1478,10 @@ export component AppWindow inherits Window {
         }
 
         HorizontalBox {
-            SinkPanel {
+            db-panel := SinkPanel {
                 title: "DATABASE";
                 subtitle: "postgres (docker)";
+                panel-tier: "db";
                 connected: root.db-status.connected;
                 used-bytes: root.db-status.logical-bytes;
                 cap-bytes: root.db-status.cap;
@@ -1186,9 +1493,10 @@ export component AppWindow inherits Window {
                 files: root.db-meta-files;
                 delete-file(id) => { root.delete-db-file(id); }
             }
-            SinkPanel {
+            cloud-panel := SinkPanel {
                 title: "CLOUD";
                 subtitle: "gcs bucket";
+                panel-tier: "cloud";
                 connected: root.cloud-status.connected;
                 used-bytes: root.cloud-status.bytes-used;
                 cap-bytes: root.cloud-status.cap;
@@ -1208,6 +1516,82 @@ export component AppWindow inherits Window {
             rss-max: root.rss-max;
             rss-series-label: root.rss-series-label;
             table-rows: root.file-table-rows;
+        }
+    }
+
+    // Floating Drag Avatar overlay
+    if DragState.active: Rectangle {
+        x: DragState.pointer-x - 110px;
+        y: DragState.pointer-y - 20px;
+        width: 220px;
+        height: 40px;
+
+        background: #ffffffe6;
+        border-radius: 8px;
+        border-width: 2px;
+        border-color: DragState.hover-target == "none" ? #2a78d6 : (
+            DragState.hover-valid ? #1baf7a : #d03b3b
+        );
+
+        HorizontalLayout {
+            padding-left: 10px;
+            padding-right: 10px;
+            padding-top: 6px;
+            padding-bottom: 6px;
+            spacing: 8px;
+
+            Text {
+                text: "⋮⋮";
+                color: #52514e;
+                font-size: 13px;
+                vertical-alignment: center;
+            }
+
+            Rectangle {
+                width: 10px;
+                height: 10px;
+                border-radius: 3px;
+                background: DragState.file-color;
+            }
+
+            Text {
+                text: DragState.file-name;
+                color: #24303a;
+                font-size: 12px;
+                font-weight: 600;
+                overflow: elide;
+                horizontal-stretch: 1;
+                vertical-alignment: center;
+            }
+
+            Text {
+                text: DragState.file-size-formatted;
+                color: #68747b;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+
+            Rectangle {
+                border-radius: 4px;
+                background: DragState.hover-target == "none" ? #e1e0d9 : (
+                    DragState.hover-valid ? #1baf7a : #d03b3b
+                );
+
+                HorizontalLayout {
+                    padding-left: 6px;
+                    padding-right: 6px;
+
+                    Text {
+                        text: DragState.hover-target == "none" ? "Dragging" : (
+                            DragState.hover-valid ? "Drop target" : "Invalid"
+                        );
+                        color: DragState.hover-target == "none" ? #52514e : #ffffff;
+                        font-size: 10px;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
+                }
+            }
         }
     }
 }
