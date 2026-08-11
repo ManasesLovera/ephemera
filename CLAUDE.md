@@ -34,20 +34,25 @@ gaps to pick up next. Then the rest of `docs/` for the full spec:
 - **Tags and releases happen only on an explicit trigger** — phrasing like "create a
   new release" or "create a new tag". Never tag or release as a side effect of
   finishing a feature, even a big one.
-- **When asked to create a release:**
+- **When asked to create a release, follow [`RELEASE_GUIDE.md`](RELEASE_GUIDE.md) for
+  what each document must contain.** In short:
   1. Check the current/last tag (`git tag --sort=-v:refname | head -1`, or
      `gh release list --limit 1`) and decide the next version.
   2. Bump the version together in `crates/ephemera-app/Cargo.toml` and
      `crates/ephemera-core/Cargo.toml` — then run `cargo check` in both crates once to
      refresh their `Cargo.lock`s before committing.
-  3. **Release notes must be a full changelog of every change since the last tag**,
-     not just the latest commit — build it from `git log <last-tag>..HEAD --oneline`
-     (grouped by type if there's enough to group).
-  4. Reference [`DOWNLOAD.md`](DOWNLOAD.md) in the release notes for how to get or
-     build the binaries.
+  3. Write `releases/vX.Y.Z.md` (technical, detailed — see the guide) and commit it
+     to `main` alongside the version bump, before tagging. `releases/` starts at
+     `v1.0.0`; don't backfill files for earlier tags.
+  4. **GitHub release notes are high-level only — no technical detail, ever.** Short
+     description, a download pointer to [`DOWNLOAD.md`](DOWNLOAD.md), Improvements,
+     Bug fixes. Technical detail belongs in `releases/vX.Y.Z.md`, never in the GitHub
+     notes.
   5. **Releases are always regular releases, never pre-releases.** `release.yml` sets
      `prerelease: false`; a manual `gh release create` must not pass `--prerelease`.
   6. Push the tag (`git push origin vX.Y.Z`) to trigger `release.yml`.
+  7. **Never edit an already-published release's notes** as a side effect of a later
+     change — that's a separate, explicit request only.
 - Commits that update these instructions themselves (this file) use the `chore:`
   conventional-commit type.
 
