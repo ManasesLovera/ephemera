@@ -10,6 +10,7 @@ ephemera-core = { path = "../ephemera-core" }
 slint = "1.17"
 tokio = { version = "1", features = ["full"] }
 chrono = "0.4"
+rfd = "0.16"
 
 [build-dependencies]
 slint-build = "1.17"
