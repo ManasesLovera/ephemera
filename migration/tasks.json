@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated_at": "2026-08-11T10:30:04Z",
+  "updated_at": "2026-08-11T11:19:45Z",
   "tasks": [
     {
       "id": "P0-T1",
@@ -530,18 +530,21 @@
       "prompt_file": "prompts/P4-T1-dashboard.md",
       "worktree": "worktrees/P4-T1",
       "branch": "migration/P4-T1",
-      "status": "running",
-      "started_at": "2026-08-11T10:30:04Z",
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T10:45:22Z",
+      "finished_at": "2026-08-11T11:05:30Z",
       "fallback_models": [
         "opencode-go/kimi-k2.7-code",
         "opencode-go/glm-5.2"
       ],
-      "model_used": null,
+      "model_used": "opencode-go/deepseek-v4-flash",
       "notes": {
         "done": [
           "Not started.",
-          "Task dispatched and execution started."
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -550,7 +553,8 @@
           "Port 4Hz dashboard (Instruments/Meter/StatTile) to Slint.",
           "Update notes while progressing with completed, missing, and remaining work."
         ]
-      }
+      },
+      "tests_status": "passed"
     },
     {
       "id": "P4-T2",
@@ -566,13 +570,15 @@
       "prompt_file": "prompts/P4-review-dashboard.md",
       "worktree": null,
       "branch": "migration/P4-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T11:06:00Z",
+      "finished_at": "2026-08-11T11:07:36Z",
+      "model_used": "opencode-go/deepseek-v4-pro",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -597,16 +603,22 @@
       "prompt_file": "prompts/P4-review-dashboard.md",
       "worktree": null,
       "branch": "migration/P4-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T11:18:20Z",
+      "finished_at": "2026-08-11T11:19:04Z",
+      "model_used": "google/gemini-3.6-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
-          "No implementation or verification recorded yet."
+          "No implementation or verification recorded yet.",
+          "Task execution failed; inspect the task log before retrying."
         ],
         "todo": [
           "Review dashboard: no dual-axis, no fabricated numbers (B).",
@@ -1028,13 +1040,14 @@
       "worktree": null,
       "branch": "migration/P4-T1",
       "target_task": "P4-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T11:19:30Z",
+      "finished_at": "2026-08-11T11:19:45Z",
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started."
         ],
         "missing": [
           "No implementation or verification recorded yet."

@@ -232,7 +232,17 @@ if [ "$kind" = "generate" ] && [ -n "$worktree_rel" ]; then
       mark_field "tests_status" "skipped"
     fi
     git -C "$worktree" add -A >>"$LOG" 2>&1 || true
-    git -C "$worktree" commit -m "feat(migration): $(jq -r '.title' <<<"$task") ($TASK_ID)" >>"$LOG" 2>&1 || true
+    if git -C "$worktree" commit -m "feat(migration): $(jq -r '.title' <<<"$task") ($TASK_ID)" >>"$LOG" 2>&1; then
+      :
+    elif [ "$(git -C "$worktree" rev-parse HEAD)" = "$(git -C "$REPO" rev-parse main)" ]; then
+      # Nothing to commit AND the branch never advanced past main at all —
+      # the agent produced no code (e.g. burned its budget researching a
+      # blocker instead of writing anything). A trivially-passing test run
+      # on unchanged code is not a real pass; don't let this report "done".
+      echo "--- no commit produced: agent made no changes ---" >>"$LOG"
+      status="failed"
+      mark_field "tests_status" "no changes made"
+    fi
   else
     status="failed"
     mark_field "tests_status" "not run"
