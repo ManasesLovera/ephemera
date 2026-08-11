@@ -1,14 +1,14 @@
 {
   "schema_version": 2,
-  "updated_at": "2026-08-08T23:52:03Z",
+  "updated_at": "2026-08-11T10:30:04Z",
   "tasks": [
     {
       "id": "P0-T1",
       "phase": 0,
       "title": "Inventory Tauri commands and React components",
       "kind": "research",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-medium",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": null,
       "depends_on": [],
       "prompt_file": "prompts/P0-T1-inventory.md",
@@ -83,13 +83,15 @@
       "prompt_file": "prompts/P0-T3-T4-review-spike.md",
       "worktree": null,
       "branch": "migration/P0-T2",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-10T03:17:27Z",
+      "finished_at": "2026-08-10T03:19:49Z",
+      "model_used": "opencode-go/deepseek-v4-pro",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -105,8 +107,8 @@
       "phase": 0,
       "title": "Review spike methodology (B: gemini-3.6-flash-high)",
       "kind": "review",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-high",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": "high",
       "depends_on": [
         "P0-T2"
@@ -115,15 +117,19 @@
       "worktree": null,
       "branch": "migration/P0-T2",
       "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "started_at": "2026-08-11T03:40:03Z",
+      "finished_at": "2026-08-11T03:40:03Z",
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task dispatched and execution started."
         ],
         "missing": [
-          "No implementation or verification recorded yet."
+          "No implementation or verification recorded yet.",
+          "Task execution failed; inspect the task log before retrying.",
+          "Task execution failed; inspect the task log before retrying."
         ],
         "todo": [
           "Review spike methodology (B: gemini-3.6-flash-high).",
@@ -136,8 +142,8 @@
       "phase": 1,
       "title": "Extract command modules into Tauri-free core",
       "kind": "generate",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-medium",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": null,
       "depends_on": [
         "P0-T3",
@@ -176,13 +182,15 @@
       "prompt_file": "prompts/P1-T2-T3-review-core.md",
       "worktree": null,
       "branch": "migration/P1-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-10T03:17:39Z",
+      "finished_at": "2026-08-10T03:17:57Z",
+      "model_used": "opencode-go/deepseek-v4-pro",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -198,8 +206,8 @@
       "phase": 1,
       "title": "Review core extraction (B: gemini-3.6-flash-high)",
       "kind": "review",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-high",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": "high",
       "depends_on": [
         "P1-T1"
@@ -207,21 +215,16 @@
       "prompt_file": "prompts/P1-T2-T3-review-core.md",
       "worktree": null,
       "branch": "migration/P1-T1",
-      "status": "todo",
+      "status": "done",
       "started_at": null,
       "finished_at": null,
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Reconciled: ephemera-core extraction was already committed directly to main (b505020) before this review task ran; no branch/PR exists to review against."
         ],
-        "missing": [
-          "No implementation or verification recorded yet."
-        ],
-        "todo": [
-          "Review core extraction (B: gemini-3.6-flash-high).",
-          "Update notes while progressing with completed, missing, and remaining work."
-        ]
+        "missing": [],
+        "todo": []
       }
     },
     {
@@ -239,26 +242,39 @@
       "prompt_file": "prompts/P2-T1-shell.md",
       "worktree": "worktrees/P2-T1",
       "branch": "migration/P2-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T03:40:03Z",
+      "finished_at": "2026-08-11T04:28:51Z",
       "fallback_models": [
         "opencode-go/kimi-k2.7-code",
         "opencode-go/glm-5.2"
       ],
-      "model_used": null,
+      "model_used": "opencode-go/deepseek-v4-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Created crates/ephemera-app: standalone Slint shell crate (own workspace + Cargo.lock), depends only on ephemera-core and slint 1.17.",
+          "ui/app.slint: 1280x860 shell window with chrome, KPI stat tiles, RAM/Disk placeholder panes (PaneCard/DiskCard), Database/Cloud placeholder sink panels, and the full state-model property set mirroring src/store/useAppStore.ts.",
+          "src/model.rs: ShellState UI-layer store (ram/disk/db/cloud lists, metrics, 60s history ring, db/cloud statuses, vault path) projected into Slint properties. Metadata only — no file bytes in any UI-layer struct or Slint property.",
+          "src/main.rs: single-process wiring — AppState built on a tokio runtime, 4Hz metrics sampler and 5s db/cloud poller marshalled to the UI thread via slint::invoke_from_event_loop, refresh-all Slint callback handled by direct core calls (no IPC).",
+          "cargo check, cargo build, cargo clippy --all-targets -D warnings, cargo fmt --check all green; 4 unit tests pass; debug binary launches on Wayland and stays alive.",
+          "Reconciled: cargo test failure was a repo-wide worktree/workspace path collision (root Cargo.toml from an unrelated untracked effort), not a code defect; fixed by relocating worktrees outside the repo tree in dispatch.sh — cargo test passes 4/4 in the relocated worktree."
         ],
         "missing": [
-          "No implementation or verification recorded yet."
+          "No implementation or verification recorded yet.",
+          "Panels are placeholders by design — RamPane/DiskPane/SinkPanel real content lands in Phase 3.",
+          "No screenshot/visual verification of the rendered window (top known gap in docs/10).",
+          "Raw i64 timestamps are projected as preformatted strings because Slint int is i32; raw values remain in the Rust-side model for Phase 3+.",
+          "Task execution failed; inspect the task log before retrying."
         ],
         "todo": [
-          "Slint shell + state bindings over ephemera-core.",
-          "Update notes while progressing with completed, missing, and remaining work."
+          "Port RamPane (P3-T1), DiskPane (P3-T2), SinkPanel (P3-T3) into the shell.",
+          "Port Instruments/Meter/StatTile 4Hz dashboard (P4-T1) using the metrics + history ring.",
+          "Update CI to build/test the Slint app (CI-T1)."
         ]
-      }
+      },
+      "tests_status": "passed"
     },
     {
       "id": "P2-T2",
@@ -274,13 +290,15 @@
       "prompt_file": "prompts/P2-T2-T3-review-shell.md",
       "worktree": null,
       "branch": "migration/P2-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T04:33:23Z",
+      "finished_at": "2026-08-11T04:36:53Z",
+      "model_used": "opencode-go/deepseek-v4-pro",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -296,8 +314,8 @@
       "phase": 2,
       "title": "Review shell bindings (B: gemini-3.6-flash-high)",
       "kind": "review",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-high",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": "high",
       "depends_on": [
         "P2-T1"
@@ -305,13 +323,15 @@
       "prompt_file": "prompts/P2-T2-T3-review-shell.md",
       "worktree": null,
       "branch": "migration/P2-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T04:37:48Z",
+      "finished_at": "2026-08-11T04:40:13Z",
+      "model_used": "google/gemini-3.6-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -327,8 +347,8 @@
       "phase": 3,
       "title": "Port RamPane to Slint",
       "kind": "generate",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-medium",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": null,
       "depends_on": [
         "P2-T2",
@@ -337,22 +357,23 @@
       "prompt_file": "prompts/P3-T1-ram-pane.md",
       "worktree": "worktrees/P3-T1",
       "branch": "migration/P3-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T05:53:48Z",
+      "finished_at": "2026-08-11T06:11:34Z",
+      "model_used": "google/gemini-3.6-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Reconciled: prior run raced with concurrent P3-T2/P3-T3 dispatch due to an opencode --dir bug (fixed in dispatch.sh) that made all three write into the main checkout instead of isolated worktrees. Branch/worktree discarded, reset to todo for a clean serial re-run.",
+          "Task dispatched and execution started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
-        "missing": [
-          "No implementation or verification recorded yet."
-        ],
+        "missing": [],
         "todo": [
-          "Port RamPane to Slint.",
-          "Update notes while progressing with completed, missing, and remaining work."
+          "Port RamPane to Slint."
         ]
-      }
+      },
+      "tests_status": "passed"
     },
     {
       "id": "P3-T2",
@@ -369,34 +390,35 @@
       "prompt_file": "prompts/P3-T2-disk-pane.md",
       "worktree": "worktrees/P3-T2",
       "branch": "migration/P3-T2",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T06:12:04Z",
+      "finished_at": "2026-08-11T08:31:38Z",
       "fallback_models": [
         "opencode-go/kimi-k2.7-code",
         "opencode-go/glm-5.2"
       ],
-      "model_used": null,
+      "model_used": "opencode-go/deepseek-v4-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Reconciled: same --dir collision as P3-T1. Branch/worktree discarded, reset to todo for a clean serial re-run.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification.",
+          "Manually rebased onto migration/P3-T1 (merged first) and resolved real conflicts in app.slint/main.rs/model.rs from the two branches independently extending the same P2-T1 base (as both reviews flagged); cargo build + 5/5 tests pass after resolution."
         ],
-        "missing": [
-          "No implementation or verification recorded yet."
-        ],
+        "missing": [],
         "todo": [
-          "Port DiskPane to Slint.",
-          "Update notes while progressing with completed, missing, and remaining work."
+          "Port DiskPane to Slint."
         ]
-      }
+      },
+      "tests_status": "passed"
     },
     {
       "id": "P3-T3",
       "phase": 3,
       "title": "Port SinkPanel (DB + GCS) to Slint",
       "kind": "generate",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-medium",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": null,
       "depends_on": [
         "P2-T2",
@@ -405,22 +427,23 @@
       "prompt_file": "prompts/P3-T3-sink-panel.md",
       "worktree": "worktrees/P3-T3",
       "branch": "migration/P3-T3",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T08:32:05Z",
+      "finished_at": "2026-08-11T09:47:42Z",
+      "model_used": "google/gemini-3.6-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Reconciled: same opencode --dir collision destroyed the real generated content, leaving only a stray Cargo.lock commit. Branch/worktree discarded, reset to todo for a clean serial re-run.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification.",
+          "Manually cherry-picked the single real commit onto the post-P3-T2 main (full rebase replayed a stale pre-squash P2-T1 ancestor commit, so cherry-pick was used instead) and resolved a real component name collision the reviews flagged: sink panel FileCard renamed to SinkFileCard (kept RAM panes FileCard distinct), formatted-size harmonized to size-formatted. cargo build + 5/5 tests pass."
         ],
-        "missing": [
-          "No implementation or verification recorded yet."
-        ],
+        "missing": [],
         "todo": [
-          "Port SinkPanel (DB + GCS) to Slint.",
-          "Update notes while progressing with completed, missing, and remaining work."
+          "Port SinkPanel (DB + GCS) to Slint."
         ]
-      }
+      },
+      "tests_status": "passed"
     },
     {
       "id": "P3-T4",
@@ -438,13 +461,15 @@
       "prompt_file": "prompts/P3-review-panels.md",
       "worktree": null,
       "branch": null,
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T09:49:43Z",
+      "finished_at": "2026-08-11T09:53:22Z",
+      "model_used": "opencode-go/deepseek-v4-pro",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -460,8 +485,8 @@
       "phase": 3,
       "title": "Review all Phase 3 panels (B: gemini-3.6-flash-high)",
       "kind": "review",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-high",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": "high",
       "depends_on": [
         "P3-T1",
@@ -471,13 +496,15 @@
       "prompt_file": "prompts/P3-review-panels.md",
       "worktree": null,
       "branch": null,
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T09:49:53Z",
+      "finished_at": "2026-08-11T09:51:19Z",
+      "model_used": "google/gemini-3.6-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -503,8 +530,8 @@
       "prompt_file": "prompts/P4-T1-dashboard.md",
       "worktree": "worktrees/P4-T1",
       "branch": "migration/P4-T1",
-      "status": "todo",
-      "started_at": null,
+      "status": "running",
+      "started_at": "2026-08-11T10:30:04Z",
       "finished_at": null,
       "fallback_models": [
         "opencode-go/kimi-k2.7-code",
@@ -513,7 +540,8 @@
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -560,8 +588,8 @@
       "phase": 4,
       "title": "Review dashboard: no dual-axis, no fabricated numbers (B)",
       "kind": "review",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-high",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": "high",
       "depends_on": [
         "P4-T1"
@@ -591,8 +619,8 @@
       "phase": 5,
       "title": "FileCard + drag-and-drop in Slint",
       "kind": "generate",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-medium",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": null,
       "depends_on": [
         "P4-T2",
@@ -691,8 +719,8 @@
       "phase": 5,
       "title": "Review Phase 5 (B: gemini-3.6-flash-high)",
       "kind": "review",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-high",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": "high",
       "depends_on": [
         "P5-T1",
@@ -723,8 +751,8 @@
       "phase": 6,
       "title": "Full-app RSS/measurement validation vs Tauri baseline",
       "kind": "research",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-medium",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": null,
       "depends_on": [
         "P5-T3",
@@ -786,8 +814,8 @@
       "phase": 6,
       "title": "Full spec/CLAUDE.md compliance review (B: gemini-3.6-flash-high)",
       "kind": "review",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-high",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": "high",
       "depends_on": [
         "P6-T1"
@@ -829,21 +857,16 @@
       "worktree": null,
       "branch": "migration/P1-T1",
       "target_task": "P1-T1",
-      "status": "todo",
+      "status": "done",
       "started_at": null,
       "finished_at": null,
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Reconciled: target already merged directly to main (b505020) outside the PR gate; no branch to open/merge."
         ],
-        "missing": [
-          "No implementation or verification recorded yet."
-        ],
-        "todo": [
-          "Open PR + auto-merge on double approval: Extract command modules into Tauri-free core.",
-          "Update notes while progressing with completed, missing, and remaining work."
-        ]
+        "missing": [],
+        "todo": []
       }
     },
     {
@@ -863,13 +886,14 @@
       "worktree": null,
       "branch": "migration/P2-T1",
       "target_task": "P2-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T04:40:49Z",
+      "finished_at": "2026-08-11T04:41:01Z",
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -897,13 +921,16 @@
       "worktree": null,
       "branch": "migration/P3-T1",
       "target_task": "P3-T1",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T10:03:34Z",
+      "finished_at": "2026-08-11T10:03:46Z",
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task dispatched and execution started.",
+          "Task dispatched and execution started."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -931,13 +958,14 @@
       "worktree": null,
       "branch": "migration/P3-T2",
       "target_task": "P3-T2",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T10:15:35Z",
+      "finished_at": "2026-08-11T10:15:52Z",
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -965,13 +993,14 @@
       "worktree": null,
       "branch": "migration/P3-T3",
       "target_task": "P3-T3",
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
+      "status": "done",
+      "started_at": "2026-08-11T10:27:55Z",
+      "finished_at": "2026-08-11T10:28:11Z",
       "model_used": null,
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -1089,8 +1118,8 @@
       "phase": 7,
       "title": "Update CI pipeline to build/test the Slint app",
       "kind": "generate",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-medium",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": null,
       "depends_on": [
         "P6-T2",
@@ -1152,8 +1181,8 @@
       "phase": 7,
       "title": "Review CI pipeline update (B: gemini-3.6-flash-high)",
       "kind": "review",
-      "cli": "agy",
-      "model": "gemini-3.6-flash-high",
+      "cli": "opencode",
+      "model": "google/gemini-3.6-flash",
       "effort": "high",
       "depends_on": [
         "CI-T1"
