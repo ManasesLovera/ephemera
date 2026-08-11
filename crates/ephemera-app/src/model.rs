@@ -17,13 +17,16 @@
 //! inside `ephemera_core::state::AppState`.
 
 use ephemera_core::types as core_types;
-use slint::{ModelRc, VecModel};
+use slint::{Model, ModelRc, VecModel};
+use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use crate::{
     AppWindow, CloudFile as UiCloudFile, CloudStatus as UiCloudStatus, DbFile as UiDbFile,
-    DbStatus as UiDbStatus, DiskFile as UiDiskFile, FileMeta as UiFileMeta, Metrics as UiMetrics,
+    DbStatus as UiDbStatus, DiskFile as UiDiskFile, FileMeta as UiFileMeta,
+    FileTableRow as UiFileTableRow, HistoryPoint as UiHistoryPoint, Metrics as UiMetrics,
 };
 
 /// Categorical slot colors matching App.css (--s1..--s8 and --other).
@@ -130,6 +133,7 @@ impl ShellState {
                 .collect(),
         ));
         self.sync_file_counts(window);
+        self.sync_instrument_table(window);
     }
 
     /// Pull the disk list straight from core and project it into the window.
@@ -152,6 +156,7 @@ impl ShellState {
                 .collect(),
         ));
         self.sync_file_counts(window);
+        self.sync_instrument_table(window);
     }
 
     /// Apply a db list/status snapshot (from the poller or startup bootstrap).
@@ -233,6 +238,7 @@ impl ShellState {
         window.set_db_cap_text(format_bytes(cap).into());
         window.set_db_count_text(format!("{} file(s) in database", files.len()).into());
         window.set_db_detail_text(detail.into());
+        self.sync_instrument_table(window);
     }
 
     /// Apply a cloud list/status snapshot (from the poller or startup bootstrap).
@@ -317,28 +323,81 @@ impl ShellState {
         window.set_cloud_cap_text(format_bytes(cap).into());
         window.set_cloud_count_text(format!("{} file(s) in cloud", files.len()).into());
         window.set_cloud_detail_text(detail.into());
+        self.sync_instrument_table(window);
     }
 
     // ---- metrics (mirrors the metrics://tick listener in useAppStore.ts) ----
 
     /// Called on the UI thread for each 4 Hz tick. Pushes the metrics struct,
     /// appends to the rolling history, and updates the KPI display strings.
+    ///
+    /// The history ring is projected into a `[HistoryPoint]` Slint model every
+    /// tick so the two Instruments sparklines render the same rolling window
+    /// (240 points). `rss_max` is the auto-scaled ceiling for the RSS chart —
+    /// computed here in Rust because Slint has no max-over-model builtin.
+    ///
+    /// The Slint-side model is a single `VecModel` created once and mutated in
+    /// place (push the new point, drop the oldest past `HISTORY_LIMIT`) rather
+    /// than rebuilt from scratch every tick. `push_metrics` runs at 4 Hz on the
+    /// UI thread (always via `invoke_from_event_loop`); reallocating a fresh
+    /// `Vec` + `Rc<VecModel>` 4 times a second would itself churn the heap this
+    /// app exists to measure honestly, inflating the RSS chart it's plotting.
+    /// `VecModel` is `Rc`-backed (not `Send`), so it lives in a thread-local
+    /// rather than a `ShellState` field — `ShellState` itself must stay
+    /// `Send + Sync` to cross into the sampler/poller threads, and this model
+    /// is only ever touched from the UI thread by construction.
     pub fn push_metrics(&self, window: &AppWindow, m: &core_types::Metrics) {
         if let Ok(mut slot) = self.metrics.lock() {
             *slot = Some(m.clone());
         }
-        if let Ok(mut history) = self.history.lock() {
-            let point = MetricPoint {
-                ts: m.ts,
-                ram: m.ram_store_bytes,
-                rss: m.process_rss_bytes,
-            };
-            if history.len() == HISTORY_LIMIT {
-                history.pop_front();
+
+        let (new_point, rss_max, len) = {
+            if let Ok(mut history) = self.history.lock() {
+                let point = MetricPoint {
+                    ts: m.ts,
+                    ram: m.ram_store_bytes,
+                    rss: m.process_rss_bytes,
+                };
+                if history.len() == HISTORY_LIMIT {
+                    history.pop_front();
+                }
+                history.push_back(point);
+                let rss_max = history.iter().map(|p| p.rss).max().unwrap_or(1).max(1);
+                (
+                    UiHistoryPoint {
+                        ram: point.ram as i32,
+                        rss: point.rss as i32,
+                    },
+                    rss_max,
+                    history.len(),
+                )
+            } else {
+                (UiHistoryPoint { ram: 0, rss: 0 }, 1, 0)
             }
-            history.push_back(point);
-            window.set_history_len(history.len() as i32);
-        }
+        };
+
+        HISTORY_MODEL.with(|cell| {
+            let mut slot = cell.borrow_mut();
+            let model = slot.get_or_insert_with(|| {
+                let model = Rc::new(VecModel::default());
+                window.set_history(ModelRc::from(model.clone()));
+                model
+            });
+            if model.row_count() >= HISTORY_LIMIT {
+                model.remove(0);
+            }
+            model.push(new_point);
+        });
+
+        window.set_history_len(len as i32);
+        window.set_rss_max(rss_max as i32);
+        window.set_rss_series_label(
+            format!(
+                "Process RSS (whole tree, auto-scaled to {})",
+                format_bytes(rss_max)
+            )
+            .into(),
+        );
 
         window.set_metrics(ui_metrics(m));
         window.set_ram_used_text(format_bytes(m.ram_store_bytes).into());
@@ -362,6 +421,24 @@ impl ShellState {
         window.set_files_text(format!("{ram} / {disk}").into());
         window.set_ram_count_text(format!("{ram} file(s) in RAM").into());
         window.set_disk_count_text(format!("{disk} file(s) on disk").into());
+    }
+
+    /// Rebuild the cross-tier file table in the Instruments drawer from the four
+    /// metadata lists. Metadata only — sizes, never bytes.
+    fn sync_instrument_table(&self, window: &AppWindow) {
+        let ram = self.ram_files.lock().map(|g| g.clone()).unwrap_or_default();
+        let disk = self
+            .disk_files
+            .lock()
+            .map(|g| g.clone())
+            .unwrap_or_default();
+        let db = self.db_files.lock().map(|g| g.clone()).unwrap_or_default();
+        let cloud = self
+            .cloud_files
+            .lock()
+            .map(|g| g.clone())
+            .unwrap_or_default();
+        window.set_file_table_rows(rows_model(table_rows(&ram, &disk, &db, &cloud)));
     }
 
     /// Placeholder "refresh-all" action handler: direct core calls.
@@ -522,10 +599,68 @@ fn cloud_model(items: Vec<UiCloudFile>) -> ModelRc<UiCloudFile> {
     ModelRc::from(std::rc::Rc::new(VecModel::from(items)))
 }
 
+thread_local! {
+    /// See the doc comment on `push_metrics` for why this lives here instead
+    /// of on `ShellState`: `VecModel` is `Rc`-backed and only ever touched
+    /// from the UI thread, which this thread-local pins it to.
+    static HISTORY_MODEL: RefCell<Option<Rc<VecModel<UiHistoryPoint>>>> = const { RefCell::new(None) };
+}
+
+fn rows_model(items: Vec<UiFileTableRow>) -> ModelRc<UiFileTableRow> {
+    ModelRc::from(std::rc::Rc::new(VecModel::from(items)))
+}
+
+/// Combine the four tier lists into the Instruments file table rows, in tier
+/// order RAM → Disk → Database → Cloud (matching `Instruments.tsx`).
+fn table_rows(
+    ram: &[core_types::FileMeta],
+    disk: &[core_types::DiskFile],
+    db: &[core_types::DbFile],
+    cloud: &[core_types::CloudFile],
+) -> Vec<UiFileTableRow> {
+    let mut rows = Vec::new();
+    for f in ram {
+        rows.push(UiFileTableRow {
+            name: f.name.clone().into(),
+            size_formatted: format_bytes(f.size).into(),
+            tier: "RAM".into(),
+            mime: f.mime.clone().into(),
+        });
+    }
+    for f in disk {
+        rows.push(UiFileTableRow {
+            name: f.meta.name.clone().into(),
+            size_formatted: format_bytes(f.meta.size).into(),
+            tier: "Disk".into(),
+            mime: f.meta.mime.clone().into(),
+        });
+    }
+    for f in db {
+        rows.push(UiFileTableRow {
+            name: f.meta.name.clone().into(),
+            size_formatted: format_bytes(f.meta.size).into(),
+            tier: "Database".into(),
+            mime: f.meta.mime.clone().into(),
+        });
+    }
+    for f in cloud {
+        rows.push(UiFileTableRow {
+            name: f.meta.name.clone().into(),
+            size_formatted: format_bytes(f.meta.size).into(),
+            tier: "Cloud".into(),
+            mime: f.meta.mime.clone().into(),
+        });
+    }
+    rows
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ephemera_core::types::{FileMeta, Origin};
+    use ephemera_core::types::{
+        CloudFile as CoreCloudFile, DbFile as CoreDbFile, DiskFile as CoreDiskFile, FileMeta,
+        Origin,
+    };
 
     fn meta(id: &str) -> FileMeta {
         FileMeta {
@@ -594,5 +729,32 @@ mod tests {
         assert_eq!(s.len(), 16);
         assert!(s.contains('-'));
         assert!(s.contains(':'));
+    }
+
+    #[test]
+    fn table_rows_combine_all_tiers_in_order() {
+        let ram = vec![meta("r1")];
+        let disk = vec![CoreDiskFile {
+            meta: meta("d1"),
+            persisted_at: 1_700_000_000_000,
+        }];
+        let db = vec![CoreDbFile {
+            meta: meta("b1"),
+            saved_at: 1_700_000_000_000,
+        }];
+        let cloud = vec![CoreCloudFile {
+            meta: meta("c1"),
+            saved_at: 1_700_000_000_000,
+            object_name: "o".into(),
+        }];
+        let rows = table_rows(&ram, &disk, &db, &cloud);
+        assert_eq!(rows.len(), 4);
+        assert_eq!(rows[0].tier, "RAM");
+        assert_eq!(rows[1].tier, "Disk");
+        assert_eq!(rows[2].tier, "Database");
+        assert_eq!(rows[3].tier, "Cloud");
+        assert_eq!(rows[0].name, "photo.jpg");
+        assert_eq!(rows[0].size_formatted, "2.1 MB");
+        assert_eq!(rows[0].mime, "image/jpeg");
     }
 }
