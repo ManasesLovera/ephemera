@@ -1,0 +1,516 @@
+// Ephemera — Slint application shell (Phase 2).
+//
+// This window replaces the Tauri + React shell. The Rust side (`src/model.rs`)
+// owns the state model and pushes these properties directly; there is no IPC and
+// no serialization boundary — UI and core run in one process, one address space.
+//
+// The metadata-only discipline from CLAUDE.md survives the removal of that
+// boundary by being enforced here in code: every property in this file carries
+// metadata (names, sizes, mime types, origins, timestamps, statuses, tiers) and
+// NEVER file byte content. The authoritative byte stores live exclusively inside
+// `ephemera_core::state::AppState` (RAM heap buffer, vault folder, Postgres, GCS).
+
+import { Button, HorizontalBox, VerticalBox } from "std-widgets.slint";
+
+// ---------------------------------------------------------------------------
+// State model structs.
+//
+// Field names mirror `docs/02-architecture.md` "Core types" and `src/types.ts`
+// (dashes become underscores in the generated Rust). `size` is `int` (i32):
+// every cap fits well within it (10/20/100 MiB). Raw `i64` timestamps do not fit
+// Slint's `int`, so they arrive pre-formatted as strings — the raw millis stay in
+// the Rust-side model, where Phase 3 panels can reformat if they need to.
+// ---------------------------------------------------------------------------
+
+export struct FileMeta {
+    id: string,
+    name: string,
+    size: int,               // bytes — metadata, never the bytes themselves
+    mime: string,
+    created-at: string,      // formatted from FileMeta.created_at
+    origin: string,          // "upload" | "stream" | "ram" | "disk"
+}
+
+export struct DiskFile {
+    meta: FileMeta,
+    persisted-at: string,    // formatted from DiskFile.persisted_at
+}
+
+export struct DbFile {
+    meta: FileMeta,
+    saved-at: string,        // formatted from DbFile.saved_at
+}
+
+export struct CloudFile {
+    meta: FileMeta,
+    saved-at: string,        // formatted from CloudFile.saved_at
+    object-name: string,
+}
+
+export struct Metrics {
+    ts: string,              // formatted from Metrics.ts
+    ram-store-bytes: int,
+    ram-cap: int,
+    disk-store-bytes: int,
+    disk-cap: int,
+    db-store-bytes: int,
+    db-cap: int,
+    db-physical-bytes: int,
+    cloud-store-bytes: int,
+    cloud-cap: int,
+    process-rss-bytes: int,
+    process-count: int,
+}
+
+export struct DbStatus {
+    connected: bool,
+    logical-bytes: int,
+    physical-bytes: int,
+    cap: int,
+    message: string,
+}
+
+export struct CloudStatus {
+    connected: bool,
+    bytes-used: int,
+    cap: int,
+    bucket: string,
+    message: string,
+}
+
+// ---------------------------------------------------------------------------
+// KPI row stat tile. Placeholder — Phase 4 ports StatTile.tsx (with the 60 s
+// sparkline) into this slot.
+// ---------------------------------------------------------------------------
+
+component StatTile inherits Rectangle {
+    in property <string> tile-label;
+    in property <string> tile-value;
+    in property <string> tile-caption;
+
+    background: #fffdf8;
+    border-color: #c9c1b4;
+    border-width: 1px;
+    border-radius: 6px;
+
+    VerticalBox {
+        padding: 12px;
+        spacing: 2px;
+        Text {
+            text: tile-label;
+            color: #68747b;
+            font-size: 12px;
+        }
+        Text {
+            text: tile-value;
+            color: #24303a;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        Text {
+            text: tile-caption;
+            color: #68747b;
+            font-size: 12px;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// RAM placeholder pane. Phase 3 ports RamPane.tsx into this card; the frame and
+// the property bindings below are the shell's.
+// ---------------------------------------------------------------------------
+
+component PaneCard inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    in property <string> used-text;
+    in property <string> cap-text;
+    in property <string> count-text;
+    in property <string> placeholder-note;
+    in property <[FileMeta]> files;
+
+    background: #fffdf8;
+    border-color: #c9c1b4;
+    border-width: 1px;
+    border-radius: 6px;
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 8px;
+
+        HorizontalBox {
+            spacing: 8px;
+            Text {
+                text: title;
+                color: #24303a;
+                font-size: 20px;
+                font-weight: 700;
+            }
+            Text {
+                text: subtitle;
+                color: #68747b;
+                font-size: 13px;
+                vertical-alignment: center;
+            }
+        }
+
+        Text {
+            text: used-text + " of " + cap-text;
+            color: #24303a;
+            font-size: 15px;
+        }
+
+        Text {
+            text: count-text;
+            color: #68747b;
+            font-size: 13px;
+        }
+
+        Rectangle {
+            height: 64px;
+            background: #f4f1ea;
+            border-radius: 4px;
+            Text {
+                text: placeholder-note;
+                color: #9a9386;
+                font-size: 13px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        // File metadata already flows in here; Phase 3 renders it as FileCards.
+        for f in files: Text {
+            text: "· " + f.name;
+            color: #24303a;
+            font-size: 13px;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Disk placeholder pane — same frame, but it binds the full DiskFile model so
+// nested field access (f.meta.name) is exercised end to end.
+// ---------------------------------------------------------------------------
+
+component DiskCard inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    in property <string> used-text;
+    in property <string> cap-text;
+    in property <string> count-text;
+    in property <string> placeholder-note;
+    in property <[DiskFile]> files;
+
+    background: #fffdf8;
+    border-color: #c9c1b4;
+    border-width: 1px;
+    border-radius: 6px;
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 8px;
+
+        HorizontalBox {
+            spacing: 8px;
+            Text {
+                text: title;
+                color: #24303a;
+                font-size: 20px;
+                font-weight: 700;
+            }
+            Text {
+                text: subtitle;
+                color: #68747b;
+                font-size: 13px;
+                vertical-alignment: center;
+            }
+        }
+
+        Text {
+            text: used-text + " of " + cap-text;
+            color: #24303a;
+            font-size: 15px;
+        }
+
+        Text {
+            text: count-text;
+            color: #68747b;
+            font-size: 13px;
+        }
+
+        Rectangle {
+            height: 64px;
+            background: #f4f1ea;
+            border-radius: 4px;
+            Text {
+                text: placeholder-note;
+                color: #9a9386;
+                font-size: 13px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        for f in files: Text {
+            text: "· " + f.meta.name;
+            color: #24303a;
+            font-size: 13px;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Database and Cloud compact sink panels. Phase 3 ports SinkPanel.tsx (meters,
+// physical/TOAST note, file cards) into this slot.
+// ---------------------------------------------------------------------------
+
+component SinkPanel inherits Rectangle {
+    in property <string> title;
+    in property <string> subtitle;
+    in property <bool> connected;
+    in property <string> used-text;
+    in property <string> cap-text;
+    in property <string> detail-text;
+    in property <string> count-text;
+    in property <[FileMeta]> files;
+
+    background: #fffdf8;
+    border-color: #c9c1b4;
+    border-width: 1px;
+    border-radius: 6px;
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 8px;
+
+        HorizontalBox {
+            spacing: 8px;
+            Text {
+                text: title;
+                color: #24303a;
+                font-size: 20px;
+                font-weight: 700;
+            }
+            Text {
+                text: subtitle;
+                color: #68747b;
+                font-size: 13px;
+                vertical-alignment: center;
+            }
+            Rectangle {
+                height: 20px;
+                border-radius: 10px;
+                background: connected ? #dfeae2 : #f3e2de;
+                Text {
+                    text: connected ? "online" : "offline";
+                    color: connected ? #287d78 : #a85a44;
+                    font-size: 11px;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        Text {
+            text: connected ? used-text + " of " + cap-text : "offline";
+            color: #24303a;
+            font-size: 15px;
+        }
+
+        Text {
+            text: detail-text;
+            color: #68747b;
+            font-size: 13px;
+        }
+
+        Text {
+            text: count-text;
+            color: #68747b;
+            font-size: 13px;
+        }
+
+        for f in files: Text {
+            text: "· " + f.name;
+            color: #24303a;
+            font-size: 13px;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The shell.
+// ---------------------------------------------------------------------------
+
+export component AppWindow inherits Window {
+    title: "Ephemera — RAM vs Disk vs Database vs Cloud";
+    width: 1280px;
+    height: 860px;
+    background: #f4f1ea;
+
+    // ---- State model: mirrors src/store/useAppStore.ts -------------------
+    in-out property <string> vault-path: "";
+    in-out property <[FileMeta]> ram-files;
+    in-out property <[DiskFile]> disk-files;
+    in-out property <[DbFile]> db-files;
+    in-out property <[CloudFile]> cloud-files;
+    in-out property <Metrics> metrics: {
+        ts: "",
+        ram-store-bytes: 0,
+        ram-cap: 10485760,
+        disk-store-bytes: 0,
+        disk-cap: 20971520,
+        db-store-bytes: 0,
+        db-cap: 104857600,
+        db-physical-bytes: 0,
+        cloud-store-bytes: 0,
+        cloud-cap: 104857600,
+        process-rss-bytes: 0,
+        process-count: 1,
+    };
+    in-out property <DbStatus> db-status: {
+        connected: false,
+        logical-bytes: 0,
+        physical-bytes: 0,
+        cap: 104857600,
+        message: "",
+    };
+    in-out property <CloudStatus> cloud-status: {
+        connected: false,
+        bytes-used: 0,
+        cap: 104857600,
+        bucket: "",
+        message: "",
+    };
+
+    // FileMeta display projections of the db/cloud lists (sink panels bind
+    // these; the full DbFile/CloudFile models above stay the state).
+    in-out property <[FileMeta]> db-meta-files;
+    in-out property <[FileMeta]> cloud-meta-files;
+
+    // Pre-formatted display strings; number formatting is owned by Rust
+    // (src/model.rs), mirroring src/lib/format.ts. Slint has no int→string
+    // coercion, so the Rust layer formats every number that reaches the UI.
+    in-out property <string> ram-used-text: "0 B";
+    in-out property <string> ram-cap-text: "10.0 MB";
+    in-out property <string> ram-count-text: "0 files in RAM";
+    in-out property <string> disk-used-text: "0 B";
+    in-out property <string> disk-cap-text: "20.0 MB";
+    in-out property <string> disk-count-text: "0 files on disk";
+    in-out property <string> app-memory-text: "0 B";
+    in-out property <string> app-memory-caption: "process tree, approximated";
+    in-out property <string> files-text: "0 / 0";
+    in-out property <string> files-caption: "ram / disk";
+    in-out property <string> db-used-text: "0 B";
+    in-out property <string> db-cap-text: "100.0 MB";
+    in-out property <string> db-count-text: "0 files in database";
+    in-out property <string> db-detail-text: "database: not connected";
+    in-out property <string> cloud-used-text: "0 B";
+    in-out property <string> cloud-cap-text: "100.0 MB";
+    in-out property <string> cloud-count-text: "0 files in cloud";
+    in-out property <string> cloud-detail-text: "cloud: not connected";
+    in-out property <int> history-len: 0;
+
+    // Slint → Rust: the placeholder "refresh everything" action. Rust handles it
+    // with direct ephemera-core calls — the old `refreshAll` zustand action had
+    // to cross IPC, this one does not.
+    callback refresh-all();
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 12px;
+
+        HorizontalBox {
+            spacing: 12px;
+            Text {
+                text: "Ephemera";
+                color: #24303a;
+                font-size: 28px;
+                font-weight: 700;
+            }
+            Text {
+                text: "vault: " + root.vault-path;
+                color: #68747b;
+                font-size: 14px;
+                vertical-alignment: center;
+            }
+            Button {
+                text: "Refresh";
+                clicked => { root.refresh-all(); }
+            }
+        }
+
+        HorizontalBox {
+            StatTile {
+                tile-label: "RAM USED";
+                tile-value: root.ram-used-text;
+                tile-caption: "of " + root.ram-cap-text;
+            }
+            StatTile {
+                tile-label: "DISK USED";
+                tile-value: root.disk-used-text;
+                tile-caption: "of " + root.disk-cap-text;
+            }
+            StatTile {
+                tile-label: "APP MEMORY";
+                tile-value: root.app-memory-text;
+                tile-caption: root.app-memory-caption;
+            }
+            StatTile {
+                tile-label: "FILES";
+                tile-value: root.files-text;
+                tile-caption: root.files-caption;
+            }
+        }
+
+        HorizontalBox {
+            PaneCard {
+                title: "RAM";
+                subtitle: "volatile";
+                used-text: root.ram-used-text;
+                cap-text: root.ram-cap-text;
+                count-text: root.ram-count-text;
+                placeholder-note: "RAM pane placeholder — Phase 3 ports RamPane.tsx here";
+                files: root.ram-files;
+            }
+            DiskCard {
+                title: "DISK";
+                subtitle: "persistent";
+                used-text: root.disk-used-text;
+                cap-text: root.disk-cap-text;
+                count-text: root.disk-count-text;
+                placeholder-note: "Disk pane placeholder — Phase 3 ports DiskPane.tsx here";
+                files: root.disk-files;
+            }
+        }
+
+        HorizontalBox {
+            SinkPanel {
+                title: "DATABASE";
+                subtitle: "postgres (docker)";
+                connected: root.db-status.connected;
+                used-text: root.db-used-text;
+                cap-text: root.db-cap-text;
+                detail-text: root.db-detail-text;
+                count-text: root.db-count-text;
+                files: root.db-meta-files;
+            }
+            SinkPanel {
+                title: "CLOUD";
+                subtitle: "gcs bucket";
+                connected: root.cloud-status.connected;
+                used-text: root.cloud-used-text;
+                cap-text: root.cloud-cap-text;
+                detail-text: root.cloud-detail-text;
+                count-text: root.cloud-count-text;
+                files: root.cloud-meta-files;
+            }
+        }
+
+        Text {
+            text: "Instruments drawer (time series, throughput ladder, tier map, file table) — Phase 4";
+            color: #9a9386;
+            font-size: 13px;
+        }
+    }
+}
