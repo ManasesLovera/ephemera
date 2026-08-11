@@ -83,6 +83,7 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     }
 
+    // Dismiss the error banner.
     {
         let weak = window.as_weak();
         window.on_clear_error(move || {
@@ -255,6 +256,119 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     }
 
+    // "Open folder": reveal the vault directory in the OS file manager. The Tauri
+    // build used `tauri_plugin_opener`; here we shell out to the platform opener
+    // on the same real folder (`get_vault_path`).
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        window.on_reveal_vault(move || {
+            if let Some(window) = weak.upgrade() {
+                window.set_error_message("".into());
+                let path = ephemera_core::get_vault_path(&shared.core);
+                if let Err(e) = open_in_file_manager(&path) {
+                    window.set_error_message(describe_error(&e).into());
+                }
+            }
+        });
+    }
+
+    // "Rescan": re-derive the vault index from the folder contents.
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        window.on_rescan_vault(move || {
+            if let Some(window) = weak.upgrade() {
+                window.set_error_message("".into());
+                match ephemera_core::rescan_vault(&shared.core) {
+                    Ok(_) => {
+                        shared.refresh_disk(&window);
+                    }
+                    Err(e) => {
+                        window.set_error_message(describe_error(&e).into());
+                    }
+                }
+            }
+        });
+    }
+
+    // Disk → database: one-way sink, never back to RAM. Runs on the tokio runtime
+    // because the Postgres store is async; marshal the result back via
+    // invoke_from_event_loop.
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        let rt_handle = rt.handle().clone();
+        window.on_save_disk_to_db(move |id| {
+            let shared = shared.clone();
+            let weak = weak.clone();
+            let id = id.to_string();
+            rt_handle.spawn(async move {
+                let res = ephemera_core::save_to_db(&shared.core, &id, "disk").await;
+                let db_status = ephemera_core::get_db_status(&shared.core).await.ok();
+                let db_files = ephemera_core::list_db(&shared.core).await.ok();
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(window) = weak.upgrade() {
+                        match res {
+                            Ok(_) => {
+                                shared.apply_db(&window, db_status, db_files);
+                            }
+                            Err(e) => {
+                                window.set_error_message(describe_error(&e).into());
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    // Disk → cloud: one-way sink, never back to RAM. Same async marshalling as
+    // the database path above.
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        let rt_handle = rt.handle().clone();
+        window.on_save_disk_to_cloud(move |id| {
+            let shared = shared.clone();
+            let weak = weak.clone();
+            let id = id.to_string();
+            rt_handle.spawn(async move {
+                let res = ephemera_core::save_to_cloud(&shared.core, &id, "disk").await;
+                let cloud_status = ephemera_core::get_cloud_status(&shared.core).await.ok();
+                let cloud_files = ephemera_core::list_cloud(&shared.core).await.ok();
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(window) = weak.upgrade() {
+                        match res {
+                            Ok(_) => {
+                                shared.apply_cloud(&window, cloud_status, cloud_files);
+                            }
+                            Err(e) => {
+                                window.set_error_message(describe_error(&e).into());
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    // Delete the real file from the vault folder (the store's `remove` unlinks).
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        window.on_delete_from_disk(move |id| {
+            if let Some(window) = weak.upgrade() {
+                window.set_error_message("".into());
+                if let Err(e) = ephemera_core::delete_from_disk(&shared.core, id.as_str()) {
+                    window.set_error_message(describe_error(&e).into());
+                } else {
+                    shared.refresh_disk(&window);
+                }
+            }
+        });
+    }
+
     // 4 Hz metrics: the core sampler runs on its own thread; marshal each tick
     // onto the UI thread via invoke_from_event_loop (the canonical Slint bridge
     // from worker to UI thread). No panics on this path: the closure only locks
@@ -297,4 +411,35 @@ fn main() -> Result<(), slint::PlatformError> {
     }
 
     window.run()
+}
+
+/// Open a folder in the OS file manager (the Slint replacement for Tauri's
+/// `tauri_plugin_opener::reveal_item_in_dir`). Each platform gets its own opener;
+/// spawning fails only if the command itself can't start.
+fn open_in_file_manager(path: &std::path::Path) -> Result<(), ephemera_core::error::AppError> {
+    #[cfg(target_os = "macos")]
+    let mut cmd = {
+        let mut c = std::process::Command::new("open");
+        c.arg(path);
+        c
+    };
+    #[cfg(target_os = "windows")]
+    let mut cmd = {
+        let mut c = std::process::Command::new("explorer");
+        c.arg(path);
+        c
+    };
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let mut cmd = {
+        let mut c = std::process::Command::new("xdg-open");
+        c.arg(path);
+        c
+    };
+
+    match cmd.spawn() {
+        Ok(_) => Ok(()),
+        Err(e) => Err(ephemera_core::error::AppError::Io {
+            message: e.to_string(),
+        }),
+    }
 }

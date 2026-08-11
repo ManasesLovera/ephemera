@@ -1,4 +1,4 @@
-// Ephemera — Slint application shell (Phase 2 & Phase 3 RAM Pane).
+// Ephemera — Slint application shell (Phase 2 & Phase 3: RAM Pane, Disk Pane).
 //
 // This window replaces the Tauri + React shell. The Rust side (`src/model.rs`)
 // owns the state model and pushes these properties directly; there is no IPC and
@@ -230,6 +230,73 @@ component Meter inherits VerticalBox {
 }
 
 // ---------------------------------------------------------------------------
+// DiskFileCard: row representation of a file in the disk pane
+// ---------------------------------------------------------------------------
+
+component DiskFileCard inherits Rectangle {
+    in property <FileMeta> meta;
+
+    callback save-to-db(string);
+    callback save-to-cloud(string);
+    callback delete-from-disk(string);
+
+    background: #fffdf8;
+    border-color: #e1e0d9;
+    border-width: 1px;
+    border-radius: 8px;
+    height: 36px;
+
+    HorizontalLayout {
+        padding-left: 8px;
+        padding-right: 8px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        spacing: 8px;
+
+        // Swatch
+        Rectangle {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: meta.color;
+        }
+
+        // File name
+        Text {
+            text: meta.name;
+            color: #24303a;
+            font-size: 12px;
+            overflow: elide;
+            horizontal-stretch: 1;
+            vertical-alignment: center;
+        }
+
+        // Formatted size
+        Text {
+            text: meta.size-formatted;
+            color: #68747b;
+            font-size: 12px;
+            vertical-alignment: center;
+        }
+
+        // Action buttons
+        ActionButton {
+            text: "to db";
+            clicked => { root.save-to-db(meta.id); }
+        }
+        ActionButton {
+            text: "to cloud";
+            clicked => { root.save-to-cloud(meta.id); }
+        }
+        ActionButton {
+            text: "✕";
+            danger: true;
+            clicked => { root.delete-from-disk(meta.id); }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // FileCard: row representation of a file in a store pane
 // ---------------------------------------------------------------------------
 
@@ -411,73 +478,107 @@ component RamPane inherits Rectangle {
 }
 
 // ---------------------------------------------------------------------------
-// Disk placeholder pane — same frame, but it binds the full DiskFile model so
-// nested field access (f.meta.name) is exercised end to end.
+// DiskPane: full disk tier pane
 // ---------------------------------------------------------------------------
 
-component DiskCard inherits Rectangle {
-    in property <string> title;
-    in property <string> subtitle;
-    in property <string> used-text;
-    in property <string> cap-text;
-    in property <string> count-text;
-    in property <string> placeholder-note;
+component DiskPane inherits Rectangle {
+    in property <string> used-text: "0 B";
+    in property <string> cap-text: "20.0 MB";
+    in property <int> used-bytes: 0;
+    in property <int> cap-bytes: 20971520;
+    in property <[FileMeta]> segments;
     in property <[DiskFile]> files;
+    in property <string> vault-path: "";
+
+    callback reveal-vault();
+    callback rescan-vault();
+    callback save-to-db(string);
+    callback save-to-cloud(string);
+    callback delete-from-disk(string);
 
     background: #fffdf8;
     border-color: #c9c1b4;
     border-width: 1px;
-    border-radius: 6px;
+    border-radius: 12px;
 
     VerticalBox {
         padding: 16px;
-        spacing: 8px;
+        spacing: 10px;
 
-        HorizontalBox {
-            spacing: 8px;
+        HorizontalLayout {
+            spacing: 6px;
             Text {
-                text: title;
+                text: "DISK";
                 color: #24303a;
-                font-size: 20px;
+                font-size: 16px;
                 font-weight: 700;
             }
             Text {
-                text: subtitle;
+                text: "persistent — survives a restart";
                 color: #68747b;
-                font-size: 13px;
+                font-size: 11px;
                 vertical-alignment: center;
             }
         }
 
-        Text {
-            text: used-text + " of " + cap-text;
-            color: #24303a;
-            font-size: 15px;
-        }
-
-        Text {
-            text: count-text;
-            color: #68747b;
-            font-size: 13px;
+        Meter {
+            used: used-bytes;
+            cap: cap-bytes;
+            used-text: used-text;
+            cap-text: cap-text;
+            segments: segments;
         }
 
         Rectangle {
-            height: 64px;
-            background: #f4f1ea;
-            border-radius: 4px;
+            height: 70px;
+            background: #f9f9f7;
+            border-width: 2px;
+            border-color: #c3c2b7;
+            border-radius: 10px;
+
             Text {
-                text: placeholder-note;
-                color: #9a9386;
+                text: files.length == 0 ? "drag from RAM to keep" : files.length + " file(s) on disk";
+                color: #898781;
                 font-size: 13px;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
         }
 
-        for f in files: Text {
-            text: "· " + f.meta.name;
-            color: #24303a;
-            font-size: 13px;
+        Flickable {
+            min-height: 100px;
+            vertical-stretch: 1;
+            viewport-height: files-layout.preferred-height;
+
+            files-layout := VerticalLayout {
+                spacing: 6px;
+                for f in files: DiskFileCard {
+                    meta: f.meta;
+                    save-to-db(id) => { root.save-to-db(id); }
+                    save-to-cloud(id) => { root.save-to-cloud(id); }
+                    delete-from-disk(id) => { root.delete-from-disk(id); }
+                }
+            }
+        }
+
+        HorizontalLayout {
+            spacing: 8px;
+            PaneButton {
+                text: "Open folder";
+                clicked => { root.reveal-vault(); }
+            }
+            PaneButton {
+                text: "Rescan";
+                clicked => { root.rescan-vault(); }
+            }
+            Text {
+                text: root.vault-path;
+                color: #68747b;
+                font-size: 11px;
+                vertical-alignment: center;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
         }
     }
 }
@@ -606,6 +707,9 @@ export component AppWindow inherits Window {
 
     in-out property <[FileMeta]> db-meta-files;
     in-out property <[FileMeta]> cloud-meta-files;
+    // FileMeta display projection of the disk list (the disk pane's meter binds
+    // segments against these; the full DiskFile model above stays the state).
+    in-out property <[FileMeta]> disk-meta-files;
 
     in-out property <string> ram-used-text: "0 B";
     in-out property <string> ram-cap-text: "10.0 MB";
@@ -636,6 +740,11 @@ export component AppWindow inherits Window {
     callback save-to-db(string);
     callback save-to-cloud(string);
     callback delete-from-ram(string);
+    callback reveal-vault();
+    callback rescan-vault();
+    callback save-disk-to-db(string);
+    callback save-disk-to-cloud(string);
+    callback delete-from-disk(string);
     callback clear-error();
 
     VerticalBox {
@@ -727,14 +836,20 @@ export component AppWindow inherits Window {
                 save-to-cloud(id) => { root.save-to-cloud(id); }
                 delete-from-ram(id) => { root.delete-from-ram(id); }
             }
-            DiskCard {
-                title: "DISK";
-                subtitle: "persistent";
+            DiskPane {
                 used-text: root.disk-used-text;
                 cap-text: root.disk-cap-text;
-                count-text: root.disk-count-text;
-                placeholder-note: "Disk pane placeholder — Phase 3 ports DiskPane.tsx here";
+                used-bytes: root.metrics.disk-store-bytes;
+                cap-bytes: root.metrics.disk-cap;
+                segments: root.disk-meta-files;
                 files: root.disk-files;
+                vault-path: root.vault-path;
+
+                reveal-vault => { root.reveal-vault(); }
+                rescan-vault => { root.rescan-vault(); }
+                save-to-db(id) => { root.save-disk-to-db(id); }
+                save-to-cloud(id) => { root.save-disk-to-cloud(id); }
+                delete-from-disk(id) => { root.delete-from-disk(id); }
             }
         }
 
