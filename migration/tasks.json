@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "updated_at": "2026-08-11T12:44:34Z",
+  "updated_at": "2026-08-11T13:53:37Z",
   "tasks": [
     {
       "id": "P0-T1",
@@ -781,7 +781,7 @@
       "title": "Full-app RSS/measurement validation vs Tauri baseline",
       "kind": "research",
       "cli": "opencode",
-      "model": "google/gemini-3.6-flash",
+      "model": "opencode-go/deepseek-v4-pro",
       "effort": null,
       "depends_on": [
         "P5-T3",
@@ -790,13 +790,17 @@
       "prompt_file": "prompts/P6-T1-validate.md",
       "worktree": null,
       "branch": null,
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T13:15:24Z",
+      "finished_at": "2026-08-11T13:35:30Z",
+      "model_used": "opencode-go/deepseek-v4-pro",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -821,13 +825,16 @@
       "prompt_file": "prompts/P6-review-compliance.md",
       "worktree": null,
       "branch": null,
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T13:36:43Z",
+      "finished_at": "2026-08-11T13:40:12Z",
+      "model_used": "opencode-go/deepseek-v4-pro",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification.",
+          "Reconciled: vault-path persistence gap confirmed pre-existing in the ORIGINAL Tauri app (ephemera_core::set_vault_path was always in-memory-only, never wired to a config file, even before migration) — not a Phase 2 regression, so left as-is rather than adding new behavior the Tauri build never had. docs/ update deferred to Phase 7 per both reviewers own notes."
         ],
         "missing": [
           "No implementation or verification recorded yet."
@@ -852,13 +859,16 @@
       "prompt_file": "prompts/P6-review-compliance.md",
       "worktree": null,
       "branch": null,
-      "status": "todo",
-      "started_at": null,
-      "finished_at": null,
-      "model_used": null,
+      "status": "done",
+      "started_at": "2026-08-11T13:36:43Z",
+      "finished_at": "2026-08-11T13:53:37Z",
+      "model_used": "google/gemini-3.6-flash",
       "notes": {
         "done": [
-          "Not started."
+          "Not started.",
+          "Task dispatched and execution started.",
+          "Task execution finished; see the task output and log for verification.",
+          "Reconciled: OS drag-and-drop investigated — Slint 1.17s DataTransfer API has no file-path support at all (only image/plain-text/same-process payloads, confirmed by reading i-slint-core-1.17.1/data_transfer.rs), so real OS file drops cannot be implemented on this Slint version. Fixed the dropzone copy (commit e2cad95) to stop claiming it works and documented why in code, rather than leave a silently broken affordance. docs/ update deferred to Phase 7."
         ],
         "missing": [
           "No implementation or verification recorded yet."
