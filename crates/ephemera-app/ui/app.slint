@@ -86,6 +86,29 @@ export struct FileTableRow {
     mime: string,
 }
 
+export struct StreamReport {
+    bytes-total: int,
+    elapsed-ms: int,
+    chunk-size: int,
+    buffered-equivalent-peak-bytes: int,
+    max-concurrent-streaming: int,
+    max-concurrent-buffered: int,
+    rss-baseline-bytes: int,
+    rss-peak-bytes: int,
+    rss-avg-bytes: int,
+    rss-peak-delta-bytes: int,
+    file-name: string,
+    throughput-mb-s: string,
+    bytes-total-formatted: string,
+    chunk-size-formatted: string,
+    elapsed-ms-formatted: string,
+    buffered-equivalent-peak-bytes-formatted: string,
+    rss-baseline-formatted: string,
+    rss-peak-formatted: string,
+    rss-avg-formatted: string,
+    rss-peak-delta-formatted: string,
+}
+
 // ---------------------------------------------------------------------------
 // Drag & Drop global state model.
 // ---------------------------------------------------------------------------
@@ -1188,6 +1211,99 @@ component Instruments inherits VerticalBox {
 }
 
 // ---------------------------------------------------------------------------
+// StreamModal: overlay modal for streaming upload report
+// ---------------------------------------------------------------------------
+
+component StreamModal inherits Rectangle {
+    in property <StreamReport> report;
+    callback close();
+
+    background: #00000066;
+
+    TouchArea {
+        clicked => { root.close(); }
+    }
+
+    Rectangle {
+        width: 580px;
+        background: #fffdf8;
+        border-color: #c9c1b4;
+        border-width: 1px;
+        border-radius: 12px;
+
+        TouchArea {}
+
+        VerticalBox {
+            padding: 20px;
+            spacing: 14px;
+
+            Text {
+                text: "Streaming report — " + report.file-name;
+                color: #24303a;
+                font-size: 18px;
+                font-weight: 700;
+                overflow: elide;
+            }
+
+            Text {
+                text: report.bytes-total-formatted + " moved in " + report.elapsed-ms-formatted + " (" + report.throughput-mb-s + "), reading/writing in fixed " + report.chunk-size-formatted + " chunks — peak memory for this operation never exceeds one chunk, regardless of file size.";
+                color: #68747b;
+                font-size: 13px;
+                wrap: word-wrap;
+            }
+
+            HorizontalBox {
+                padding: 0px;
+                spacing: 8px;
+
+                StatTile {
+                    horizontal-stretch: 1;
+                    tile-label: "Streaming peak (measured)";
+                    tile-value: report.chunk-size-formatted;
+                    tile-caption: "fixed chunk size";
+                }
+                StatTile {
+                    horizontal-stretch: 1;
+                    tile-label: "Buffered would need (derived)";
+                    tile-value: report.buffered-equivalent-peak-bytes-formatted;
+                    tile-caption: "entire file in RAM";
+                }
+                StatTile {
+                    horizontal-stretch: 1;
+                    tile-label: "Files at once — streaming";
+                    tile-value: "" + report.max-concurrent-streaming;
+                    tile-caption: "against 10 MB RAM cap";
+                }
+                StatTile {
+                    horizontal-stretch: 1;
+                    tile-label: "Files at once — buffered";
+                    tile-value: "" + report.max-concurrent-buffered;
+                    tile-caption: "against 10 MB RAM cap";
+                }
+            }
+
+            Text {
+                text: "RSS during transfer — baseline " + report.rss-baseline-formatted + ", peak " + report.rss-peak-formatted + ", average " + report.rss-avg-formatted + " (delta " + report.rss-peak-delta-formatted + "). Concurrency figures are calculated against the 10 MB RAM cap, not live-measured.";
+                color: #898781;
+                font-size: 11px;
+                wrap: word-wrap;
+            }
+
+            HorizontalLayout {
+                padding: 0px;
+                alignment: end;
+
+                PaneButton {
+                    text: "Close";
+                    primary: true;
+                    clicked => { root.close(); }
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // The shell.
 // ---------------------------------------------------------------------------
 
@@ -1264,6 +1380,10 @@ export component AppWindow inherits Window {
     in-out property <string> rss-series-label: "Process RSS (whole tree, auto-scaled)";
     in-out property <[FileTableRow]> file-table-rows;
     in-out property <string> error-message: "";
+    in-out property <bool> show-stream-report: false;
+    in-out property <StreamReport> stream-report;
+
+    callback close-stream-report();
 
     // Slint → Rust: delete actions from sink panels
     callback delete-db-file(string);
@@ -1593,5 +1713,14 @@ export component AppWindow inherits Window {
                 }
             }
         }
+    }
+
+    if root.show-stream-report : StreamModal {
+        x: 0px;
+        y: 0px;
+        width: 100%;
+        height: 100%;
+        report: root.stream-report;
+        close => { root.close-stream-report(); }
     }
 }
