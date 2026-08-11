@@ -218,7 +218,7 @@ Phase 1 specifically so the logic has no Tauri dependency). `crates/ephemera-app
 | `delete_from_cloud` | `id` | `()` | |
 | `get_cloud_status` | — | `CloudStatus` | Drives the offline/misconfigured banner |
 | `get_config` | — | `Config` | |
-| `set_vault_path` | `path` | `Config` | Validates writable; rescans. In-memory only, not persisted across restarts — a pre-existing gap from before the migration, not introduced by it (see `docs/10-implementation-status.md`) |
+| `set_vault_path` | `path` | `Config` | Validates writable; rescans. Also persists the path to the OS config dir (`config_file.rs`, best-effort), read back at startup with fallback to the default when the persisted folder is gone or not writable |
 | `get_vault_path` | — | `String` | Used by "Open folder" |
 | `get_metrics` | — | `Metrics` | One-shot; the 4 Hz sampler is the normal path |
 

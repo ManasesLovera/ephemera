@@ -29,6 +29,45 @@ fn default_vault_path() -> PathBuf {
     base.join("com.ephemera.app").join("vault")
 }
 
+/// Vault path for this launch: the user's persisted choice when it still
+/// points at an existing, writable directory; otherwise the default
+/// (docs/01-requirements.md, "Configuration": "MUST persist the vault path
+/// between runs"). The persisted file is only read here, never rewritten —
+/// when the chosen folder is temporarily gone (e.g. an unplugged drive) the
+/// app falls back for this run but keeps the choice on disk for the next one.
+fn initial_vault_path() -> PathBuf {
+    let persisted = ephemera_core::config_file::load().map(|cfg| cfg.vault_path);
+    resolve_vault_path(persisted, default_vault_path())
+}
+
+/// Pure decision behind `initial_vault_path`, split out for testing. A
+/// persisted path is unusable when it is relative, no longer a directory, or
+/// not writable (`readonly()` is the no-write-bits heuristic — a read-only
+/// mount with write bits set still slips through, but the first real write
+/// then fails cleanly, which the vault already handles). Unusable means "use
+/// the default for this launch", never a crash (docs/01 Non-functional: the
+/// vault being deleted or made read-only must not take the app down).
+fn resolve_vault_path(persisted: Option<String>, default: PathBuf) -> PathBuf {
+    let Some(candidate) = persisted.map(PathBuf::from) else {
+        return default;
+    };
+    let usable = candidate.is_absolute()
+        && std::fs::metadata(&candidate)
+            .map(|meta| meta.is_dir() && !meta.permissions().readonly())
+            .unwrap_or(false);
+    if usable {
+        candidate
+    } else {
+        eprintln!(
+            "ephemera: persisted vault path {} is missing or not writable; \
+             falling back to default {}",
+            candidate.display(),
+            default.display()
+        );
+        default
+    }
+}
+
 /// Walks upward from `start`, returning the first ancestor directory containing
 /// `filename`. Carried over from the Tauri build (`src-tauri/src/lib.rs`, commit
 /// `0e2fc7a`): anchoring on the executable's own location, rather than the
@@ -76,7 +115,7 @@ fn main() -> Result<(), slint::PlatformError> {
     // on the main thread.
     let rt = tokio::runtime::Runtime::new().expect("failed to start tokio runtime");
 
-    let vault_path = default_vault_path();
+    let vault_path = initial_vault_path();
     let (core, db_status, db_files, cloud_status, cloud_files) = rt.block_on(async {
         let database_url = std::env::var("DATABASE_URL").unwrap_or_else(|_| {
             "postgres://ephemera:ephemera_dev_only@localhost:5432/ephemera".to_string()
@@ -551,5 +590,64 @@ fn open_in_file_manager(path: &std::path::Path) -> Result<(), ephemera_core::err
         Err(e) => Err(ephemera_core::error::AppError::Io {
             message: e.to_string(),
         }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn default() -> PathBuf {
+        PathBuf::from("/nonexistent-ephemera-default")
+    }
+
+    #[test]
+    fn resolve_prefers_persisted_when_usable() {
+        let dir = tempfile::tempdir().unwrap();
+        let persisted = dir.path().to_string_lossy().into_owned();
+        assert_eq!(resolve_vault_path(Some(persisted), default()), dir.path());
+    }
+
+    #[test]
+    fn resolve_falls_back_when_nothing_persisted() {
+        assert_eq!(resolve_vault_path(None, default()), default());
+    }
+
+    #[test]
+    fn resolve_falls_back_when_persisted_missing() {
+        let dir = tempfile::tempdir().unwrap();
+        let gone = dir
+            .path()
+            .join("deleted-vault")
+            .to_string_lossy()
+            .into_owned();
+        assert_eq!(resolve_vault_path(Some(gone), default()), default());
+    }
+
+    #[test]
+    fn resolve_falls_back_when_persisted_is_a_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("not-a-dir");
+        std::fs::write(&file, b"x").unwrap();
+        let persisted = file.to_string_lossy().into_owned();
+        assert_eq!(resolve_vault_path(Some(persisted), default()), default());
+    }
+
+    #[test]
+    fn resolve_falls_back_when_persisted_is_relative() {
+        let relative = "definitely-not-a-real-relative-vault-path".to_string();
+        assert_eq!(resolve_vault_path(Some(relative), default()), default());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn resolve_falls_back_when_persisted_readonly() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o555)).unwrap();
+        let persisted = dir.path().to_string_lossy().into_owned();
+        let resolved = resolve_vault_path(Some(persisted), default());
+        std::fs::set_permissions(dir.path(), std::fs::Permissions::from_mode(0o755)).unwrap();
+        assert_eq!(resolved, default());
     }
 }

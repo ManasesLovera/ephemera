@@ -122,6 +122,7 @@ ephemera/
 │   ├── ephemera-core/           # Tauri-free logic crate — no UI dependency at all
 │   │   ├── src/
 │   │   │   ├── lib.rs           # AppState, config, metrics
+│   │   │   ├── config_file.rs   # vault-path persistence in the OS config dir
 │   │   │   ├── ram_store.rs, vault.rs, db_store.rs, cloud_store.rs
 │   │   │   ├── stream.rs        # chunked read/write, StreamReport
 │   │   │   ├── state.rs         # AppState, sampler spawning
