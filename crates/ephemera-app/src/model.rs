@@ -17,8 +17,10 @@
 //! inside `ephemera_core::state::AppState`.
 
 use ephemera_core::types as core_types;
-use slint::{ModelRc, VecModel};
+use slint::{Model, ModelRc, VecModel};
+use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 
 use crate::{
@@ -333,12 +335,23 @@ impl ShellState {
     /// tick so the two Instruments sparklines render the same rolling window
     /// (240 points). `rss_max` is the auto-scaled ceiling for the RSS chart —
     /// computed here in Rust because Slint has no max-over-model builtin.
+    ///
+    /// The Slint-side model is a single `VecModel` created once and mutated in
+    /// place (push the new point, drop the oldest past `HISTORY_LIMIT`) rather
+    /// than rebuilt from scratch every tick. `push_metrics` runs at 4 Hz on the
+    /// UI thread (always via `invoke_from_event_loop`); reallocating a fresh
+    /// `Vec` + `Rc<VecModel>` 4 times a second would itself churn the heap this
+    /// app exists to measure honestly, inflating the RSS chart it's plotting.
+    /// `VecModel` is `Rc`-backed (not `Send`), so it lives in a thread-local
+    /// rather than a `ShellState` field — `ShellState` itself must stay
+    /// `Send + Sync` to cross into the sampler/poller threads, and this model
+    /// is only ever touched from the UI thread by construction.
     pub fn push_metrics(&self, window: &AppWindow, m: &core_types::Metrics) {
         if let Ok(mut slot) = self.metrics.lock() {
             *slot = Some(m.clone());
         }
 
-        let (points, rss_max, len) = {
+        let (new_point, rss_max, len) = {
             if let Ok(mut history) = self.history.lock() {
                 let point = MetricPoint {
                     ts: m.ts,
@@ -349,20 +362,33 @@ impl ShellState {
                     history.pop_front();
                 }
                 history.push_back(point);
-                let points: Vec<UiHistoryPoint> = history
-                    .iter()
-                    .map(|p| UiHistoryPoint {
-                        ram: p.ram as i32,
-                        rss: p.rss as i32,
-                    })
-                    .collect();
                 let rss_max = history.iter().map(|p| p.rss).max().unwrap_or(1).max(1);
-                (points, rss_max, history.len())
+                (
+                    UiHistoryPoint {
+                        ram: point.ram as i32,
+                        rss: point.rss as i32,
+                    },
+                    rss_max,
+                    history.len(),
+                )
             } else {
-                (Vec::new(), 1, 0)
+                (UiHistoryPoint { ram: 0, rss: 0 }, 1, 0)
             }
         };
-        window.set_history(history_model(points));
+
+        HISTORY_MODEL.with(|cell| {
+            let mut slot = cell.borrow_mut();
+            let model = slot.get_or_insert_with(|| {
+                let model = Rc::new(VecModel::default());
+                window.set_history(ModelRc::from(model.clone()));
+                model
+            });
+            if model.row_count() >= HISTORY_LIMIT {
+                model.remove(0);
+            }
+            model.push(new_point);
+        });
+
         window.set_history_len(len as i32);
         window.set_rss_max(rss_max as i32);
         window.set_rss_series_label(
@@ -573,8 +599,11 @@ fn cloud_model(items: Vec<UiCloudFile>) -> ModelRc<UiCloudFile> {
     ModelRc::from(std::rc::Rc::new(VecModel::from(items)))
 }
 
-fn history_model(items: Vec<UiHistoryPoint>) -> ModelRc<UiHistoryPoint> {
-    ModelRc::from(std::rc::Rc::new(VecModel::from(items)))
+thread_local! {
+    /// See the doc comment on `push_metrics` for why this lives here instead
+    /// of on `ShellState`: `VecModel` is `Rc`-backed and only ever touched
+    /// from the UI thread, which this thread-local pins it to.
+    static HISTORY_MODEL: RefCell<Option<Rc<VecModel<UiHistoryPoint>>>> = const { RefCell::new(None) };
 }
 
 fn rows_model(items: Vec<UiFileTableRow>) -> ModelRc<UiFileTableRow> {
