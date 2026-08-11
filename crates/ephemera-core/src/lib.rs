@@ -38,7 +38,8 @@ pub fn find_upwards(start: &Path, filename: &str) -> Option<PathBuf> {
 
 pub async fn upload_to_ram(state: &AppState, path: &str) -> Result<FileMeta, AppError> {
     let p = Path::new(path);
-    let name = vault::sanitize_filename(p.file_name().and_then(|n| n.to_str()).unwrap_or("unnamed"))?;
+    let name =
+        vault::sanitize_filename(p.file_name().and_then(|n| n.to_str()).unwrap_or("unnamed"))?;
     let bytes = std::fs::read(p)?;
     let mime = mime_guess::from_path(&name)
         .first_or_octet_stream()
@@ -197,7 +198,11 @@ pub async fn get_db_status(state: &AppState) -> Result<DbStatus, ()> {
 
 // ==================== GCS CLOUD STORE ====================
 
-pub async fn save_to_cloud(state: &AppState, id: &str, source: &str) -> Result<CloudFile, AppError> {
+pub async fn save_to_cloud(
+    state: &AppState,
+    id: &str,
+    source: &str,
+) -> Result<CloudFile, AppError> {
     let (meta, bytes): (FileMeta, Vec<u8>) = match source {
         "ram" => {
             let ram = state.ram.lock().unwrap();

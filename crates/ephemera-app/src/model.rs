@@ -574,7 +574,8 @@ pub fn ui_stream_report(r: &core_types::StreamReport) -> UiStreamReport {
         chunk_size_formatted: format_bytes(r.chunk_size).into(),
         elapsed_ms_formatted: format_ms(r.elapsed_ms).into(),
         buffered_equivalent_peak_bytes: r.buffered_equivalent_peak_bytes as i32,
-        buffered_equivalent_peak_bytes_formatted: format_bytes(r.buffered_equivalent_peak_bytes).into(),
+        buffered_equivalent_peak_bytes_formatted: format_bytes(r.buffered_equivalent_peak_bytes)
+            .into(),
         max_concurrent_streaming: r.max_concurrent_streaming as i32,
         max_concurrent_buffered: r.max_concurrent_buffered as i32,
         rss_baseline_bytes: r.rss_baseline_bytes as i32,

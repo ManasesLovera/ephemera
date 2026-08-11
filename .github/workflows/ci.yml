@@ -11,23 +11,8 @@ env:
   DATABASE_URL: postgres://ephemera:ephemera_dev_only@localhost:5432/ephemera
 
 jobs:
-  frontend:
-    name: Frontend (typecheck + build)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-
-  backend:
-    name: Backend (fmt + clippy + test)
+  core:
+    name: Core (fmt + clippy + test)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -46,15 +31,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Linux/Tauri build dependencies
+      - name: Install Linux build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libsoup-3.0-dev \
-            libgtk-3-dev \
-            librsvg2-dev \
             build-essential \
             pkg-config
 
@@ -65,59 +45,73 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            crates/ephemera-core
+            crates/ephemera-app
 
-      - name: Check formatting
-        working-directory: src-tauri
+      - name: Check formatting (ephemera-core)
+        working-directory: crates/ephemera-core
         run: cargo fmt --check
 
-      - name: Clippy
-        working-directory: src-tauri
+      - name: Clippy (ephemera-core)
+        working-directory: crates/ephemera-core
         run: cargo clippy --all-targets -- -D warnings
 
-      - name: Build
-        working-directory: src-tauri
-        run: cargo build --verbose
-
-      - name: Test
-        working-directory: src-tauri
+      - name: Test (ephemera-core)
+        working-directory: crates/ephemera-core
         run: cargo test --verbose
 
-  tauri-build:
-    name: Full Tauri app build (Linux)
-    needs: [frontend, backend]
+  app:
+    name: Slint App (fmt + clippy + test + build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Linux/Tauri build dependencies
+      - name: Install Linux build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libsoup-3.0-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libx11-dev \
+            libxkbcommon-dev \
+            libxcb1-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libxcursor-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libwayland-dev \
             libgtk-3-dev \
-            librsvg2-dev \
             build-essential \
-            pkg-config \
-            libayatana-appindicator3-dev
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+            pkg-config
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: |
+            crates/ephemera-core
+            crates/ephemera-app
 
-      - name: Build Tauri app bundle
-        uses: tauri-apps/tauri-action@v0
+      - name: Check formatting (ephemera-app)
+        working-directory: crates/ephemera-app
+        run: cargo fmt --check
+
+      - name: Clippy (ephemera-app)
+        working-directory: crates/ephemera-app
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test (ephemera-app)
+        working-directory: crates/ephemera-app
+        run: cargo test --verbose
+
+      - name: Build release (ephemera-app)
+        working-directory: crates/ephemera-app
+        run: cargo build --release --verbose
