@@ -369,6 +369,51 @@ fn main() -> Result<(), slint::PlatformError> {
         });
     }
 
+    // Delete actions for DB and Cloud sink panels.
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        let rt_handle = rt.handle().clone();
+        window.on_delete_db_file(move |id| {
+            let shared = shared.clone();
+            let weak = weak.clone();
+            let id_str = id.to_string();
+            rt_handle.spawn(async move {
+                if ephemera_core::delete_from_db(&shared.core, &id_str).await.is_ok() {
+                    let db_status = ephemera_core::get_db_status(&shared.core).await.ok();
+                    let db_files = ephemera_core::list_db(&shared.core).await.ok();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(window) = weak.upgrade() {
+                            shared.apply_db(&window, db_status, db_files);
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        let rt_handle = rt.handle().clone();
+        window.on_delete_cloud_file(move |id| {
+            let shared = shared.clone();
+            let weak = weak.clone();
+            let id_str = id.to_string();
+            rt_handle.spawn(async move {
+                if ephemera_core::delete_from_cloud(&shared.core, &id_str).await.is_ok() {
+                    let cloud_status = ephemera_core::get_cloud_status(&shared.core).await.ok();
+                    let cloud_files = ephemera_core::list_cloud(&shared.core).await.ok();
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(window) = weak.upgrade() {
+                            shared.apply_cloud(&window, cloud_status, cloud_files);
+                        }
+                    });
+                }
+            });
+        });
+    }
+
     // 4 Hz metrics: the core sampler runs on its own thread; marshal each tick
     // onto the UI thread via invoke_from_event_loop (the canonical Slint bridge
     // from worker to UI thread). No panics on this path: the closure only locks

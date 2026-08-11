@@ -10,7 +10,7 @@
 // NEVER file byte content. The authoritative byte stores live exclusively inside
 // `ephemera_core::state::AppState` (RAM heap buffer, vault folder, Postgres, GCS).
 
-import { Button, HorizontalBox, VerticalBox } from "std-widgets.slint";
+import { Button, HorizontalBox, VerticalBox, ScrollView } from "std-widgets.slint";
 
 // ---------------------------------------------------------------------------
 // State model structs.
@@ -584,78 +584,204 @@ component DiskPane inherits Rectangle {
 }
 
 // ---------------------------------------------------------------------------
-// Database and Cloud compact sink panels.
+// SinkFileCard: row representation of a file in a sink (DB/Cloud) panel.
+// Named distinctly from the RAM pane's FileCard (different signature: a
+// single delete-clicked callback rather than the four RAM tier actions).
+// ---------------------------------------------------------------------------
+
+component SinkFileCard inherits Rectangle {
+    in property <FileMeta> meta;
+    in property <string> delete-title: "Delete file";
+    callback delete-clicked();
+
+    background: #ffffff;
+    border-color: #e1e0d9;
+    border-width: 1px;
+    border-radius: 8px;
+    height: 36px;
+
+    HorizontalBox {
+        padding-left: 8px;
+        padding-right: 8px;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        spacing: 8px;
+
+        // Swatch
+        Rectangle {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: #008300;
+        }
+
+        // File name
+        Text {
+            text: meta.name;
+            color: #0b0b0b;
+            font-size: 12px;
+            horizontal-stretch: 1;
+            overflow: elide;
+            vertical-alignment: center;
+        }
+
+        // Size
+        Text {
+            text: meta.size-formatted;
+            color: #898781;
+            font-size: 11px;
+            vertical-alignment: center;
+        }
+
+        // Delete button ✕
+        Rectangle {
+            width: 24px;
+            height: 24px;
+            border-radius: 5px;
+            border-width: 1px;
+            border-color: #e1e0d9;
+            background: touch.has-hover ? #e1e0d9 : transparent;
+
+            Text {
+                text: "✕";
+                color: #52514e;
+                font-size: 11px;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+
+            touch := TouchArea {
+                clicked => { root.delete-clicked(); }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Database and Cloud compact sink panels. Ported from SinkPanel.tsx.
 // ---------------------------------------------------------------------------
 
 component SinkPanel inherits Rectangle {
     in property <string> title;
     in property <string> subtitle;
     in property <bool> connected;
+    in property <int> used-bytes;
+    in property <int> cap-bytes: 104857600;
     in property <string> used-text;
     in property <string> cap-text;
     in property <string> detail-text;
-    in property <string> count-text;
+    in property <string> offline-message;
+    in property <string> delete-title: "Delete file";
     in property <[FileMeta]> files;
+
+    callback delete-file(string);
 
     background: #fffdf8;
     border-color: #c9c1b4;
     border-width: 1px;
-    border-radius: 6px;
+    border-radius: 12px;
 
     VerticalBox {
         padding: 16px;
-        spacing: 8px;
+        spacing: 10px;
 
+        // Header: Title and Subtitle
         HorizontalBox {
             spacing: 8px;
+            padding: 0px;
             Text {
                 text: title;
                 color: #24303a;
-                font-size: 20px;
+                font-size: 14px;
                 font-weight: 700;
             }
             Text {
                 text: subtitle;
                 color: #68747b;
-                font-size: 13px;
+                font-size: 11px;
                 vertical-alignment: center;
             }
-            Rectangle {
-                height: 20px;
-                border-radius: 10px;
-                background: connected ? #dfeae2 : #f3e2de;
+        }
+
+        // Offline state
+        if !connected : Rectangle {
+            background: #e1e0d9;
+            border-radius: 8px;
+
+            VerticalLayout {
+                padding: 10px;
+
                 Text {
-                    text: connected ? "online" : "offline";
-                    color: connected ? #287d78 : #a85a44;
-                    font-size: 11px;
-                    horizontal-alignment: center;
-                    vertical-alignment: center;
+                    text: offline-message != "" ? offline-message : "offline";
+                    color: #52514e;
+                    font-size: 12px;
+                    wrap: word-wrap;
                 }
             }
         }
 
-        Text {
-            text: connected ? used-text + " of " + cap-text : "offline";
-            color: #24303a;
-            font-size: 15px;
-        }
+        // Online state
+        if connected : VerticalBox {
+            padding: 0px;
+            spacing: 8px;
 
-        Text {
-            text: detail-text;
-            color: #68747b;
-            font-size: 13px;
-        }
+            // Segmented Meter Track (100 MB cap visualization)
+            Rectangle {
+                height: 22px;
+                background: #e1e0d9;
+                border-radius: 6px;
+                clip: true;
 
-        Text {
-            text: count-text;
-            color: #68747b;
-            font-size: 13px;
-        }
+                if used-bytes > 0 : Rectangle {
+                    x: 0px;
+                    y: 0px;
+                    width: parent.width * Math.max(0.01, Math.min(1.0, (used-bytes * 1.0) / (cap-bytes * 1.0)));
+                    height: 100%;
+                    background: #008300;
+                }
+            }
 
-        for f in files: Text {
-            text: "· " + f.name;
-            color: #24303a;
-            font-size: 13px;
+            // Meter Caption
+            HorizontalBox {
+                padding: 0px;
+                Text {
+                    text: used-text;
+                    color: #52514e;
+                    font-size: 11px;
+                    horizontal-stretch: 1;
+                }
+                Text {
+                    text: "of " + cap-text;
+                    color: #52514e;
+                    font-size: 11px;
+                }
+            }
+
+            // Physical Note / Extra Detail
+            if detail-text != "" : Text {
+                text: detail-text;
+                color: #898781;
+                font-size: 11px;
+            }
+
+            // File List
+            if files.length == 0 : Text {
+                text: "No files stored in this tier yet";
+                color: #898781;
+                font-size: 11px;
+            }
+
+            if files.length > 0 : ScrollView {
+                max-height: 220px;
+                VerticalLayout {
+                    spacing: 6px;
+                    for f in files : SinkFileCard {
+                        meta: f;
+                        delete-title: root.delete-title;
+                        delete-clicked => { root.delete-file(f.id); }
+                    }
+                }
+            }
         }
     }
 }
@@ -732,6 +858,13 @@ export component AppWindow inherits Window {
     in-out property <int> history-len: 0;
     in-out property <string> error-message: "";
 
+    // Slint → Rust: delete actions from sink panels
+    callback delete-db-file(string);
+    callback delete-cloud-file(string);
+
+    // Slint → Rust: the placeholder "refresh everything" action. Rust handles it
+    // with direct ephemera-core calls — the old `refreshAll` zustand action had
+    // to cross IPC, this one does not.
     callback refresh-all();
     callback upload-ram-files();
     callback stream-upload-to-disk();
@@ -858,21 +991,29 @@ export component AppWindow inherits Window {
                 title: "DATABASE";
                 subtitle: "postgres (docker)";
                 connected: root.db-status.connected;
+                used-bytes: root.db-status.logical-bytes;
+                cap-bytes: root.db-status.cap;
                 used-text: root.db-used-text;
                 cap-text: root.db-cap-text;
                 detail-text: root.db-detail-text;
-                count-text: root.db-count-text;
+                offline-message: root.db-status.message != "" ? root.db-status.message : "Database offline — start it with docker compose up -d";
+                delete-title: "Delete from database";
                 files: root.db-meta-files;
+                delete-file(id) => { root.delete-db-file(id); }
             }
             SinkPanel {
                 title: "CLOUD";
                 subtitle: "gcs bucket";
                 connected: root.cloud-status.connected;
+                used-bytes: root.cloud-status.bytes-used;
+                cap-bytes: root.cloud-status.cap;
                 used-text: root.cloud-used-text;
                 cap-text: root.cloud-cap-text;
                 detail-text: root.cloud-detail-text;
-                count-text: root.cloud-count-text;
+                offline-message: root.cloud-status.message != "" ? root.cloud-status.message : "GCS bucket offline or gcs-key.json missing";
+                delete-title: "Delete from cloud";
                 files: root.cloud-meta-files;
+                delete-file(id) => { root.delete-cloud-file(id); }
             }
         }
 
