@@ -10,6 +10,7 @@
 slint::include_modules!();
 
 mod model;
+mod settings;
 
 use ephemera_core::state::AppState;
 use model::{describe_error, ShellState};
@@ -110,6 +111,16 @@ fn main() -> Result<(), slint::PlatformError> {
     });
 
     let window = AppWindow::new()?;
+
+    // Bundled-translation language: must be selected after the first component is
+    // created (see slint::select_bundled_translation docs). An unrecognized/corrupt
+    // saved value or a select error just falls back to the compiled-in default
+    // ("en") rather than failing startup over a UI preference.
+    let saved_settings = settings::load();
+    if slint::select_bundled_translation(&saved_settings.language).is_ok() {
+        window.set_current_language(saved_settings.language.clone().into());
+    }
+
     let shared = ShellState::new(core, vault_path.to_string_lossy().to_string());
 
     // Initial synchronous refresh (RAM/disk/vault are in-process and cheap), plus
@@ -138,6 +149,27 @@ fn main() -> Result<(), slint::PlatformError> {
         window.on_clear_error(move || {
             if let Some(window) = weak.upgrade() {
                 window.set_error_message("".into());
+            }
+        });
+    }
+
+    // Language toggle: switch the bundled translation immediately (all @tr()
+    // bindings re-evaluate on their own — no manual re-push of translated
+    // properties needed) and persist the choice for the next launch.
+    {
+        let weak = window.as_weak();
+        window.on_switch_language(move |lang| {
+            if let Some(window) = weak.upgrade() {
+                if slint::select_bundled_translation(lang.as_str()).is_ok() {
+                    window.set_current_language(lang.clone());
+                    settings::save(&settings::Settings {
+                        language: lang.to_string(),
+                    });
+                } else {
+                    window.set_error_message(
+                        format!("Unknown language: {}", lang.as_str()).into(),
+                    );
+                }
             }
         });
     }

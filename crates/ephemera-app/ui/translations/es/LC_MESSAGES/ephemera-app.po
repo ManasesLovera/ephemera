@@ -1,0 +1,432 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"POT-Creation-Date: 2026-08-11 20:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: ui/app.slint:289
+msgctxt "Meter"
+msgid "of {}"
+msgstr "de {}"
+
+#: ui/app.slint:422
+msgctxt "DiskFileCard"
+msgid "to db"
+msgstr "a BD"
+
+#: ui/app.slint:426
+msgctxt "DiskFileCard"
+msgid "to cloud"
+msgstr "a nube"
+
+#: ui/app.slint:565
+msgctxt "FileCard"
+msgid "to disk"
+msgstr "a disco"
+
+#: ui/app.slint:569
+msgctxt "FileCard"
+msgid "to db"
+msgstr "a BD"
+
+#: ui/app.slint:573
+msgctxt "FileCard"
+msgid "to cloud"
+msgstr "a nube"
+
+#: ui/app.slint:619
+msgctxt "RamPane"
+msgid "RAM"
+msgstr "RAM"
+
+#: ui/app.slint:625
+msgctxt "RamPane"
+msgid "volatile — cleared when app closes"
+msgstr "volátil — se borra al cerrar la app"
+
+#: ui/app.slint:659
+msgctxt "RamPane"
+msgid "click to browse for files"
+msgstr "clic para buscar archivos"
+
+#: ui/app.slint:659
+msgctxt "RamPane"
+msgid "{n} file in RAM"
+msgid_plural "{n} files in RAM"
+msgstr[0] "{n} archivo en RAM"
+msgstr[1] "{n} archivos en RAM"
+
+#: ui/app.slint:688
+msgctxt "RamPane"
+msgid "Upload"
+msgstr "Subir"
+
+#: ui/app.slint:693
+msgctxt "RamPane"
+msgid "Stream to disk"
+msgstr "Transmitir a disco"
+
+#: ui/app.slint:697
+msgctxt "RamPane"
+msgid "Pull the plug"
+msgstr "Desenchufar"
+
+#: ui/app.slint:741
+msgctxt "DiskPane"
+msgid "DISK"
+msgstr "DISCO"
+
+#: ui/app.slint:747
+msgctxt "DiskPane"
+msgid "persistent — survives a restart"
+msgstr "persistente — sobrevive a un reinicio"
+
+#: ui/app.slint:772
+msgctxt "DiskPane"
+msgid "drag from RAM to keep"
+msgstr "arrastra desde RAM para conservar"
+
+#: ui/app.slint:772
+msgctxt "DiskPane"
+msgid "{n} file on disk"
+msgid_plural "{n} files on disk"
+msgstr[0] "{n} archivo en disco"
+msgstr[1] "{n} archivos en disco"
+
+#: ui/app.slint:800
+msgctxt "DiskPane"
+msgid "Open folder"
+msgstr "Abrir carpeta"
+
+#: ui/app.slint:804
+msgctxt "DiskPane"
+msgid "Rescan"
+msgstr "Reescanear"
+
+#: ui/app.slint:827
+msgctxt "SinkFileCard"
+msgid "Delete file"
+msgstr "Eliminar archivo"
+
+#: ui/app.slint:908
+msgctxt "SinkPanel"
+msgid "Delete file"
+msgstr "Eliminar archivo"
+
+#: ui/app.slint:963
+msgctxt "SinkPanel"
+msgid "offline"
+msgstr "sin conexión"
+
+#: ui/app.slint:1017
+msgctxt "SinkPanel"
+msgid "of {}"
+msgstr "de {}"
+
+#: ui/app.slint:1033
+msgctxt "SinkPanel"
+msgid "No files stored in this tier yet"
+msgstr "Aún no hay archivos en este nivel"
+
+#: ui/app.slint:1110
+msgctxt "Instruments"
+msgid "RAM store bytes (0–10 MB)"
+msgstr "Bytes almacenados en RAM (0–10 MB)"
+
+#: ui/app.slint:1111
+msgctxt "Instruments"
+msgid "Process RSS (whole tree, auto-scaled)"
+msgstr "RSS del proceso (árbol completo, escala automática)"
+
+#: ui/app.slint:1112
+msgctxt "Instruments"
+msgid "Two separate scales, deliberately never combined on one axis — see docs/03-ui-and-visualization.md."
+msgstr "Dos escalas separadas, deliberadamente nunca combinadas en un eje — ver docs/03-ui-and-visualization.md."
+
+#: ui/app.slint:1133
+msgctxt "Instruments"
+msgid "Instruments — time series · file table"
+msgstr "Instrumentos — series temporales · tabla de archivos"
+
+#: ui/app.slint:1189
+msgctxt "Instruments"
+msgid "Name"
+msgstr "Nombre"
+
+#: ui/app.slint:1190
+msgctxt "Instruments"
+msgid "Size"
+msgstr "Tamaño"
+
+#: ui/app.slint:1191
+msgctxt "Instruments"
+msgid "Tier"
+msgstr "Nivel"
+
+#: ui/app.slint:1192
+msgctxt "Instruments"
+msgid "Mime"
+msgstr "Mime"
+
+#: ui/app.slint:1196
+msgctxt "Instruments"
+msgid "no files in any tier yet"
+msgstr "aún no hay archivos en ningún nivel"
+
+#: ui/app.slint:1248
+msgctxt "StreamModal"
+msgid "Streaming report — {}"
+msgstr "Informe de transmisión — {}"
+
+#: ui/app.slint:1256
+msgctxt "StreamModal"
+msgid "{} moved in {} ({}), reading/writing in fixed {} chunks — peak memory for this operation never exceeds one chunk, regardless of file size."
+msgstr "{} movidos en {} ({}), leyendo/escribiendo en bloques fijos de {} — la memoria máxima de esta operación nunca supera un bloque, sin importar el tamaño del archivo."
+
+#: ui/app.slint:1268
+msgctxt "StreamModal"
+msgid "Streaming peak (measured)"
+msgstr "Pico de transmisión (medido)"
+
+#: ui/app.slint:1270
+msgctxt "StreamModal"
+msgid "fixed chunk size"
+msgstr "tamaño de bloque fijo"
+
+#: ui/app.slint:1274
+msgctxt "StreamModal"
+msgid "Buffered would need (derived)"
+msgstr "Lo que necesitaría en búfer (derivado)"
+
+#: ui/app.slint:1276
+msgctxt "StreamModal"
+msgid "entire file in RAM"
+msgstr "archivo completo en RAM"
+
+#: ui/app.slint:1280
+msgctxt "StreamModal"
+msgid "Files at once — streaming"
+msgstr "Archivos a la vez — transmisión"
+
+#: ui/app.slint:1282 ui/app.slint:1288
+msgctxt "StreamModal"
+msgid "against 10 MB RAM cap"
+msgstr "contra el límite de 10 MB de RAM"
+
+#: ui/app.slint:1286
+msgctxt "StreamModal"
+msgid "Files at once — buffered"
+msgstr "Archivos a la vez — con búfer"
+
+#: ui/app.slint:1293
+msgctxt "StreamModal"
+msgid "RSS during transfer — baseline {}, peak {}, average {} (delta {}). Concurrency figures are calculated against the 10 MB RAM cap, not live-measured."
+msgstr "RSS durante la transferencia — base {}, pico {}, promedio {} (delta {}). Las cifras de concurrencia se calculan contra el límite de 10 MB de RAM, no se miden en vivo."
+
+#: ui/app.slint:1304
+msgctxt "StreamModal"
+msgid "Close"
+msgstr "Cerrar"
+
+#: ui/app.slint:1318
+msgctxt "AppWindow"
+msgid "Ephemera — RAM vs Disk vs Database vs Cloud"
+msgstr "Ephemera — RAM vs Disco vs Base de datos vs Nube"
+
+#: ui/app.slint:1370
+msgctxt "AppWindow"
+msgid "0 files in RAM"
+msgstr "0 archivos en RAM"
+
+#: ui/app.slint:1373
+msgctxt "AppWindow"
+msgid "0 files on disk"
+msgstr "0 archivos en disco"
+
+#: ui/app.slint:1375
+msgctxt "AppWindow"
+msgid "process tree, approximated"
+msgstr "árbol de procesos, aproximado"
+
+#: ui/app.slint:1377
+msgctxt "AppWindow"
+msgid "ram / disk"
+msgstr "ram / disco"
+
+#: ui/app.slint:1380
+msgctxt "AppWindow"
+msgid "0 files in database"
+msgstr "0 archivos en base de datos"
+
+#: ui/app.slint:1381
+msgctxt "AppWindow"
+msgid "database: not connected"
+msgstr "base de datos: sin conexión"
+
+#: ui/app.slint:1384
+msgctxt "AppWindow"
+msgid "0 files in cloud"
+msgstr "0 archivos en la nube"
+
+#: ui/app.slint:1385
+msgctxt "AppWindow"
+msgid "cloud: not connected"
+msgstr "nube: sin conexión"
+
+#: ui/app.slint:1391
+msgctxt "AppWindow"
+msgid "Process RSS (whole tree, auto-scaled)"
+msgstr "RSS del proceso (árbol completo, escala automática)"
+
+#: ui/app.slint:1473
+msgctxt "AppWindow"
+msgid "One-way rule: cannot move files back to RAM"
+msgstr "Regla de sentido único: no se pueden mover archivos de vuelta a RAM"
+
+#: ui/app.slint:1473
+msgctxt "AppWindow"
+msgid "Already in RAM"
+msgstr "Ya está en RAM"
+
+#: ui/app.slint:1476
+msgctxt "AppWindow"
+msgid "Already on Disk"
+msgstr "Ya está en Disco"
+
+#: ui/app.slint:1478
+msgctxt "AppWindow"
+msgid "Disk quota exceeded — file cannot fit"
+msgstr "Cuota de disco excedida — el archivo no cabe"
+
+#: ui/app.slint:1478
+msgctxt "AppWindow"
+msgid "Drop to persist to Disk"
+msgstr "Suelta para guardar en Disco"
+
+#: ui/app.slint:1482
+msgctxt "AppWindow"
+msgid "Database offline"
+msgstr "Base de datos sin conexión"
+
+#: ui/app.slint:1484
+msgctxt "AppWindow"
+msgid "Database quota exceeded — file cannot fit"
+msgstr "Cuota de base de datos excedida — el archivo no cabe"
+
+#: ui/app.slint:1484
+msgctxt "AppWindow"
+msgid "Drop to save to Database"
+msgstr "Suelta para guardar en la Base de datos"
+
+#: ui/app.slint:1488
+msgctxt "AppWindow"
+msgid "Cloud storage offline"
+msgstr "Almacenamiento en la nube sin conexión"
+
+#: ui/app.slint:1490
+msgctxt "AppWindow"
+msgid "Cloud quota exceeded — file cannot fit"
+msgstr "Cuota de la nube excedida — el archivo no cabe"
+
+#: ui/app.slint:1490
+msgctxt "AppWindow"
+msgid "Drop to save to Cloud"
+msgstr "Suelta para guardar en la Nube"
+
+#: ui/app.slint:1548
+msgctxt "AppWindow"
+msgid "vault: {}"
+msgstr "bóveda: {}"
+
+#: ui/app.slint:1554
+msgctxt "AppWindow"
+msgid "Refresh"
+msgstr "Actualizar"
+
+#: ui/app.slint:1571
+msgctxt "AppWindow"
+msgid "RAM USED"
+msgstr "RAM USADA"
+
+#: ui/app.slint:1573 ui/app.slint:1578
+msgctxt "AppWindow"
+msgid "of {}"
+msgstr "de {}"
+
+#: ui/app.slint:1576
+msgctxt "AppWindow"
+msgid "DISK USED"
+msgstr "DISCO USADO"
+
+#: ui/app.slint:1581
+msgctxt "AppWindow"
+msgid "APP MEMORY"
+msgstr "MEMORIA DE LA APP"
+
+#: ui/app.slint:1586
+msgctxt "AppWindow"
+msgid "FILES"
+msgstr "ARCHIVOS"
+
+#: ui/app.slint:1627
+msgctxt "AppWindow"
+msgid "DATABASE"
+msgstr "BASE DE DATOS"
+
+#: ui/app.slint:1628
+msgctxt "AppWindow"
+msgid "postgres (docker)"
+msgstr "postgres (docker)"
+
+#: ui/app.slint:1636
+msgctxt "AppWindow"
+msgid "Database offline — start it with docker compose up -d"
+msgstr "Base de datos sin conexión — inícala con docker compose up -d"
+
+#: ui/app.slint:1637
+msgctxt "AppWindow"
+msgid "Delete from database"
+msgstr "Eliminar de la base de datos"
+
+#: ui/app.slint:1642
+msgctxt "AppWindow"
+msgid "CLOUD"
+msgstr "NUBE"
+
+#: ui/app.slint:1643
+msgctxt "AppWindow"
+msgid "gcs bucket"
+msgstr "bucket de gcs"
+
+#: ui/app.slint:1651
+msgctxt "AppWindow"
+msgid "GCS bucket offline or gcs-key.json missing"
+msgstr "Bucket de GCS sin conexión o falta gcs-key.json"
+
+#: ui/app.slint:1652
+msgctxt "AppWindow"
+msgid "Delete from cloud"
+msgstr "Eliminar de la nube"
+
+#: ui/app.slint:1730
+msgctxt "AppWindow"
+msgid "Dragging"
+msgstr "Arrastrando"
+
+#: ui/app.slint:1731
+msgctxt "AppWindow"
+msgid "Drop target"
+msgstr "Destino válido"
+
+#: ui/app.slint:1731
+msgctxt "AppWindow"
+msgid "Invalid"
+msgstr "Inválido"
