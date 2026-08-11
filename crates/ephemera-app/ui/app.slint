@@ -286,7 +286,7 @@ component Meter inherits VerticalBox {
             horizontal-alignment: left;
         }
         Text {
-            text: "of " + cap-text;
+            text: @tr("of {}", cap-text);
             color: #52514e;
             font-size: 11px;
             horizontal-alignment: right;
@@ -419,11 +419,11 @@ component DiskFileCard inherits Rectangle {
 
         // Action buttons
         ActionButton {
-            text: "to db";
+            text: @tr("to db");
             clicked => { root.save-to-db(meta.id); }
         }
         ActionButton {
-            text: "to cloud";
+            text: @tr("to cloud");
             clicked => { root.save-to-cloud(meta.id); }
         }
         ActionButton {
@@ -562,15 +562,15 @@ component FileCard inherits Rectangle {
 
         // Action buttons
         ActionButton {
-            text: "to disk";
+            text: @tr("to disk");
             clicked => { root.persist-to-disk(meta.id); }
         }
         ActionButton {
-            text: "to db";
+            text: @tr("to db");
             clicked => { root.save-to-db(meta.id); }
         }
         ActionButton {
-            text: "to cloud";
+            text: @tr("to cloud");
             clicked => { root.save-to-cloud(meta.id); }
         }
         ActionButton {
@@ -616,13 +616,13 @@ component RamPane inherits Rectangle {
         HorizontalLayout {
             spacing: 6px;
             Text {
-                text: "RAM";
+                text: @tr("RAM");
                 color: #24303a;
                 font-size: 16px;
                 font-weight: 700;
             }
             Text {
-                text: "volatile — cleared when app closes";
+                text: @tr("volatile — cleared when app closes");
                 color: #68747b;
                 font-size: 11px;
                 vertical-alignment: center;
@@ -656,7 +656,7 @@ component RamPane inherits Rectangle {
             }
 
             Text {
-                text: is-drop-target ? drop-reason : (files.length == 0 ? "click to browse for files" : files.length + " file(s) in RAM");
+                text: is-drop-target ? drop-reason : (files.length == 0 ? @tr("click to browse for files") : @tr("{n} file in RAM" | "{n} files in RAM" % files.length));
                 color: is-drop-target ? #d03b3b : #898781;
                 font-size: 13px;
                 font-weight: is-drop-target ? 600 : 400;
@@ -685,16 +685,16 @@ component RamPane inherits Rectangle {
         HorizontalLayout {
             spacing: 8px;
             PaneButton {
-                text: "Upload";
+                text: @tr("Upload");
                 primary: true;
                 clicked => { root.browse-ram(); }
             }
             PaneButton {
-                text: "Stream to disk";
+                text: @tr("Stream to disk");
                 clicked => { root.stream-to-disk(); }
             }
             PaneButton {
-                text: "Pull the plug";
+                text: @tr("Pull the plug");
                 danger: true;
                 clicked => { root.pull-the-plug(); }
             }
@@ -738,13 +738,13 @@ component DiskPane inherits Rectangle {
         HorizontalLayout {
             spacing: 6px;
             Text {
-                text: "DISK";
+                text: @tr("DISK");
                 color: #24303a;
                 font-size: 16px;
                 font-weight: 700;
             }
             Text {
-                text: "persistent — survives a restart";
+                text: @tr("persistent — survives a restart");
                 color: #68747b;
                 font-size: 11px;
                 vertical-alignment: center;
@@ -769,7 +769,7 @@ component DiskPane inherits Rectangle {
             border-radius: 10px;
 
             Text {
-                text: is-drop-target ? drop-reason : (files.length == 0 ? "drag from RAM to keep" : files.length + " file(s) on disk");
+                text: is-drop-target ? drop-reason : (files.length == 0 ? @tr("drag from RAM to keep") : @tr("{n} file on disk" | "{n} files on disk" % files.length));
                 color: is-drop-target ? (drop-valid ? #1b5e20 : #d03b3b) : #898781;
                 font-size: 13px;
                 font-weight: is-drop-target ? 600 : 400;
@@ -797,11 +797,11 @@ component DiskPane inherits Rectangle {
         HorizontalLayout {
             spacing: 8px;
             PaneButton {
-                text: "Open folder";
+                text: @tr("Open folder");
                 clicked => { root.reveal-vault(); }
             }
             PaneButton {
-                text: "Rescan";
+                text: @tr("Rescan");
                 clicked => { root.rescan-vault(); }
             }
             Text {
@@ -824,7 +824,7 @@ component DiskPane inherits Rectangle {
 
 component SinkFileCard inherits Rectangle {
     in property <FileMeta> meta;
-    in property <string> delete-title: "Delete file";
+    in property <string> delete-title: @tr("Delete file");
     callback delete-clicked();
 
     background: #ffffff;
@@ -905,7 +905,7 @@ component SinkPanel inherits Rectangle {
     in property <string> cap-text;
     in property <string> detail-text;
     in property <string> offline-message;
-    in property <string> delete-title: "Delete file";
+    in property <string> delete-title: @tr("Delete file");
     in property <[FileMeta]> files;
 
     callback delete-file(string);
@@ -960,7 +960,7 @@ component SinkPanel inherits Rectangle {
                 padding: 10px;
 
                 Text {
-                    text: offline-message != "" ? offline-message : "offline";
+                    text: offline-message != "" ? offline-message : @tr("offline");
                     color: #52514e;
                     font-size: 12px;
                     wrap: word-wrap;
@@ -1014,7 +1014,7 @@ component SinkPanel inherits Rectangle {
                     horizontal-alignment: left;
                 }
                 Text {
-                    text: "of " + cap-text;
+                    text: @tr("of {}", cap-text);
                     color: #52514e;
                     font-size: 11px;
                     horizontal-alignment: right;
@@ -1030,7 +1030,7 @@ component SinkPanel inherits Rectangle {
 
             // File List
             if files.length == 0 : Text {
-                text: "No files stored in this tier yet";
+                text: @tr("No files stored in this tier yet");
                 color: #898781;
                 font-size: 11px;
             }
@@ -1107,9 +1107,9 @@ component Instruments inherits VerticalBox {
     in property <[HistoryPoint]> history;
     in property <int> ram-max: 10485760;
     in property <int> rss-max: 1;
-    in property <string> ram-series-label: "RAM store bytes (0–10 MB)";
-    in property <string> rss-series-label: "Process RSS (whole tree, auto-scaled)";
-    in property <string> axis-note: "Two separate scales, deliberately never combined on one axis — see docs/03-ui-and-visualization.md.";
+    in property <string> ram-series-label: @tr("RAM store bytes (0–10 MB)");
+    in property <string> rss-series-label: @tr("Process RSS (whole tree, auto-scaled)");
+    in property <string> axis-note: @tr("Two separate scales, deliberately never combined on one axis — see docs/03-ui-and-visualization.md.");
     in property <[FileTableRow]> table-rows;
 
     property <bool> open: false;
@@ -1130,7 +1130,7 @@ component Instruments inherits VerticalBox {
             padding-right: 10px;
 
             Text {
-                text: open ? "▾ Instruments — time series · file table" : "▸ Instruments — time series · file table";
+                text: (open ? "▾ " : "▸ ") + @tr("Instruments — time series · file table");
                 color: #24303a;
                 font-size: 13px;
                 font-weight: 600;
@@ -1186,14 +1186,14 @@ component Instruments inherits VerticalBox {
                 spacing: 4px;
 
                 HorizontalLayout {
-                    Text { text: "Name"; color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 3; overflow: elide; }
-                    Text { text: "Size"; color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 1; }
-                    Text { text: "Tier"; color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 1; }
-                    Text { text: "Mime"; color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 2; overflow: elide; }
+                    Text { text: @tr("Name"); color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 3; overflow: elide; }
+                    Text { text: @tr("Size"); color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 1; }
+                    Text { text: @tr("Tier"); color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 1; }
+                    Text { text: @tr("Mime"); color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 2; overflow: elide; }
                 }
 
                 if table-rows.length == 0 : Text {
-                    text: "no files in any tier yet";
+                    text: @tr("no files in any tier yet");
                     color: #898781;
                     font-size: 11px;
                 }
@@ -1245,7 +1245,7 @@ component StreamModal inherits Rectangle {
             spacing: 14px;
 
             Text {
-                text: "Streaming report — " + report.file-name;
+                text: @tr("Streaming report — {}", report.file-name);
                 color: #24303a;
                 font-size: 18px;
                 font-weight: 700;
@@ -1253,7 +1253,7 @@ component StreamModal inherits Rectangle {
             }
 
             Text {
-                text: report.bytes-total-formatted + " moved in " + report.elapsed-ms-formatted + " (" + report.throughput-mb-s + "), reading/writing in fixed " + report.chunk-size-formatted + " chunks — peak memory for this operation never exceeds one chunk, regardless of file size.";
+                text: @tr("{} moved in {} ({}), reading/writing in fixed {} chunks — peak memory for this operation never exceeds one chunk, regardless of file size.", report.bytes-total-formatted, report.elapsed-ms-formatted, report.throughput-mb-s, report.chunk-size-formatted);
                 color: #68747b;
                 font-size: 13px;
                 wrap: word-wrap;
@@ -1265,32 +1265,32 @@ component StreamModal inherits Rectangle {
 
                 StatTile {
                     horizontal-stretch: 1;
-                    tile-label: "Streaming peak (measured)";
+                    tile-label: @tr("Streaming peak (measured)");
                     tile-value: report.chunk-size-formatted;
-                    tile-caption: "fixed chunk size";
+                    tile-caption: @tr("fixed chunk size");
                 }
                 StatTile {
                     horizontal-stretch: 1;
-                    tile-label: "Buffered would need (derived)";
+                    tile-label: @tr("Buffered would need (derived)");
                     tile-value: report.buffered-equivalent-peak-bytes-formatted;
-                    tile-caption: "entire file in RAM";
+                    tile-caption: @tr("entire file in RAM");
                 }
                 StatTile {
                     horizontal-stretch: 1;
-                    tile-label: "Files at once — streaming";
+                    tile-label: @tr("Files at once — streaming");
                     tile-value: "" + report.max-concurrent-streaming;
-                    tile-caption: "against 10 MB RAM cap";
+                    tile-caption: @tr("against 10 MB RAM cap");
                 }
                 StatTile {
                     horizontal-stretch: 1;
-                    tile-label: "Files at once — buffered";
+                    tile-label: @tr("Files at once — buffered");
                     tile-value: "" + report.max-concurrent-buffered;
-                    tile-caption: "against 10 MB RAM cap";
+                    tile-caption: @tr("against 10 MB RAM cap");
                 }
             }
 
             Text {
-                text: "RSS during transfer — baseline " + report.rss-baseline-formatted + ", peak " + report.rss-peak-formatted + ", average " + report.rss-avg-formatted + " (delta " + report.rss-peak-delta-formatted + "). Concurrency figures are calculated against the 10 MB RAM cap, not live-measured.";
+                text: @tr("RSS during transfer — baseline {}, peak {}, average {} (delta {}). Concurrency figures are calculated against the 10 MB RAM cap, not live-measured.", report.rss-baseline-formatted, report.rss-peak-formatted, report.rss-avg-formatted, report.rss-peak-delta-formatted);
                 color: #898781;
                 font-size: 11px;
                 wrap: word-wrap;
@@ -1301,7 +1301,7 @@ component StreamModal inherits Rectangle {
                 alignment: end;
 
                 PaneButton {
-                    text: "Close";
+                    text: @tr("Close");
                     primary: true;
                     clicked => { root.close(); }
                 }
@@ -1315,12 +1315,16 @@ component StreamModal inherits Rectangle {
 // ---------------------------------------------------------------------------
 
 export component AppWindow inherits Window {
-    title: "Ephemera — RAM vs Disk vs Database vs Cloud";
+    title: @tr("Ephemera — RAM vs Disk vs Database vs Cloud");
     width: 1280px;
     height: 860px;
     background: #f4f1ea;
 
     // ---- State model: mirrors src/store/useAppStore.ts -------------------
+    // Selected language, mirrored from the Rust side's persisted preference
+    // (see GAP-I18N: main.rs loads it before window.run() and re-applies it
+    // via slint::select_bundled_translation on every switch-language click).
+    in-out property <string> current-language: "en";
     in-out property <string> vault-path: "";
     in-out property <[FileMeta]> ram-files;
     in-out property <[DiskFile]> disk-files;
@@ -1363,28 +1367,28 @@ export component AppWindow inherits Window {
 
     in-out property <string> ram-used-text: "0 B";
     in-out property <string> ram-cap-text: "10.0 MB";
-    in-out property <string> ram-count-text: "0 files in RAM";
+    in-out property <string> ram-count-text: @tr("0 files in RAM");
     in-out property <string> disk-used-text: "0 B";
     in-out property <string> disk-cap-text: "20.0 MB";
-    in-out property <string> disk-count-text: "0 files on disk";
+    in-out property <string> disk-count-text: @tr("0 files on disk");
     in-out property <string> app-memory-text: "0 B";
-    in-out property <string> app-memory-caption: "process tree, approximated";
+    in-out property <string> app-memory-caption: @tr("process tree, approximated");
     in-out property <string> files-text: "0 / 0";
-    in-out property <string> files-caption: "ram / disk";
+    in-out property <string> files-caption: @tr("ram / disk");
     in-out property <string> db-used-text: "0 B";
     in-out property <string> db-cap-text: "100.0 MB";
-    in-out property <string> db-count-text: "0 files in database";
-    in-out property <string> db-detail-text: "database: not connected";
+    in-out property <string> db-count-text: @tr("0 files in database");
+    in-out property <string> db-detail-text: @tr("database: not connected");
     in-out property <string> cloud-used-text: "0 B";
     in-out property <string> cloud-cap-text: "100.0 MB";
-    in-out property <string> cloud-count-text: "0 files in cloud";
-    in-out property <string> cloud-detail-text: "cloud: not connected";
+    in-out property <string> cloud-count-text: @tr("0 files in cloud");
+    in-out property <string> cloud-detail-text: @tr("cloud: not connected");
     in-out property <int> history-len: 0;
     // Projection of the Rust-side 240-point ring buffer (see model.rs
     // `MetricPoint` / `ShellState.history`) into the two stacked sparklines.
     in-out property <[HistoryPoint]> history;
     in-out property <int> rss-max: 1;
-    in-out property <string> rss-series-label: "Process RSS (whole tree, auto-scaled)";
+    in-out property <string> rss-series-label: @tr("Process RSS (whole tree, auto-scaled)");
     in-out property <[FileTableRow]> file-table-rows;
     in-out property <string> error-message: "";
     in-out property <bool> show-stream-report: false;
@@ -1413,6 +1417,10 @@ export component AppWindow inherits Window {
     callback save-disk-to-cloud(string);
     callback delete-from-disk(string);
     callback clear-error();
+    // Slint → Rust: switch the bundled translation language ("en" | "es") and
+    // persist the choice. Rust calls slint::select_bundled_translation, which
+    // takes effect immediately — see docs/10-implementation-status.md.
+    callback switch-language(string);
 
     // Drag target tracking logic
     property <bool> pointer-in-ram: DragState.active &&
@@ -1462,24 +1470,24 @@ export component AppWindow inherits Window {
 
     property <string> current-hover-reason:
         current-hover-target == "ram" ? (
-            DragState.source-tier == "disk" ? "One-way rule: cannot move files back to RAM" : "Already in RAM"
+            DragState.source-tier == "disk" ? @tr("One-way rule: cannot move files back to RAM") : @tr("Already in RAM")
         ) : (
             current-hover-target == "disk" ? (
-                DragState.source-tier == "disk" ? "Already on Disk" : (
+                DragState.source-tier == "disk" ? @tr("Already on Disk") : (
                     root.metrics.disk-store-bytes + DragState.file-size > root.metrics.disk-cap ?
-                        "Disk quota exceeded — file cannot fit" : "Drop to persist to Disk"
+                        @tr("Disk quota exceeded — file cannot fit") : @tr("Drop to persist to Disk")
                 )
             ) : (
                 current-hover-target == "db" ? (
-                    !root.db-status.connected ? "Database offline" : (
+                    !root.db-status.connected ? @tr("Database offline") : (
                         root.db-status.logical-bytes + DragState.file-size > root.db-status.cap ?
-                            "Database quota exceeded — file cannot fit" : "Drop to save to Database"
+                            @tr("Database quota exceeded — file cannot fit") : @tr("Drop to save to Database")
                     )
                 ) : (
                     current-hover-target == "cloud" ? (
-                        !root.cloud-status.connected ? "Cloud storage offline" : (
+                        !root.cloud-status.connected ? @tr("Cloud storage offline") : (
                             root.cloud-status.bytes-used + DragState.file-size > root.cloud-status.cap ?
-                                "Cloud quota exceeded — file cannot fit" : "Drop to save to Cloud"
+                                @tr("Cloud quota exceeded — file cannot fit") : @tr("Drop to save to Cloud")
                         )
                     ) : ""
                 )
@@ -1537,35 +1545,45 @@ export component AppWindow inherits Window {
                 font-weight: 700;
             }
             Text {
-                text: "vault: " + root.vault-path;
+                text: @tr("vault: {}", root.vault-path);
                 color: #68747b;
                 font-size: 14px;
                 vertical-alignment: center;
             }
             PaneButton {
-                text: "Refresh";
+                text: @tr("Refresh");
                 clicked => { root.refresh-all(); }
+            }
+            PaneButton {
+                text: "EN";
+                primary: root.current-language == "en";
+                clicked => { root.switch-language("en"); }
+            }
+            PaneButton {
+                text: "ES";
+                primary: root.current-language == "es";
+                clicked => { root.switch-language("es"); }
             }
         }
 
         HorizontalBox {
             StatTile {
-                tile-label: "RAM USED";
+                tile-label: @tr("RAM USED");
                 tile-value: root.ram-used-text;
-                tile-caption: "of " + root.ram-cap-text;
+                tile-caption: @tr("of {}", root.ram-cap-text);
             }
             StatTile {
-                tile-label: "DISK USED";
+                tile-label: @tr("DISK USED");
                 tile-value: root.disk-used-text;
-                tile-caption: "of " + root.disk-cap-text;
+                tile-caption: @tr("of {}", root.disk-cap-text);
             }
             StatTile {
-                tile-label: "APP MEMORY";
+                tile-label: @tr("APP MEMORY");
                 tile-value: root.app-memory-text;
                 tile-caption: root.app-memory-caption;
             }
             StatTile {
-                tile-label: "FILES";
+                tile-label: @tr("FILES");
                 tile-value: root.files-text;
                 tile-caption: root.files-caption;
             }
@@ -1606,8 +1624,8 @@ export component AppWindow inherits Window {
 
         HorizontalBox {
             db-panel := SinkPanel {
-                title: "DATABASE";
-                subtitle: "postgres (docker)";
+                title: @tr("DATABASE");
+                subtitle: @tr("postgres (docker)");
                 panel-tier: "db";
                 connected: root.db-status.connected;
                 used-bytes: root.db-status.logical-bytes;
@@ -1615,14 +1633,14 @@ export component AppWindow inherits Window {
                 used-text: root.db-used-text;
                 cap-text: root.db-cap-text;
                 detail-text: root.db-detail-text;
-                offline-message: root.db-status.message != "" ? root.db-status.message : "Database offline — start it with docker compose up -d";
-                delete-title: "Delete from database";
+                offline-message: root.db-status.message != "" ? root.db-status.message : @tr("Database offline — start it with docker compose up -d");
+                delete-title: @tr("Delete from database");
                 files: root.db-meta-files;
                 delete-file(id) => { root.delete-db-file(id); }
             }
             cloud-panel := SinkPanel {
-                title: "CLOUD";
-                subtitle: "gcs bucket";
+                title: @tr("CLOUD");
+                subtitle: @tr("gcs bucket");
                 panel-tier: "cloud";
                 connected: root.cloud-status.connected;
                 used-bytes: root.cloud-status.bytes-used;
@@ -1630,8 +1648,8 @@ export component AppWindow inherits Window {
                 used-text: root.cloud-used-text;
                 cap-text: root.cloud-cap-text;
                 detail-text: root.cloud-detail-text;
-                offline-message: root.cloud-status.message != "" ? root.cloud-status.message : "GCS bucket offline or gcs-key.json missing";
-                delete-title: "Delete from cloud";
+                offline-message: root.cloud-status.message != "" ? root.cloud-status.message : @tr("GCS bucket offline or gcs-key.json missing");
+                delete-title: @tr("Delete from cloud");
                 files: root.cloud-meta-files;
                 delete-file(id) => { root.delete-cloud-file(id); }
             }
@@ -1709,8 +1727,8 @@ export component AppWindow inherits Window {
                     padding-right: 6px;
 
                     Text {
-                        text: DragState.hover-target == "none" ? "Dragging" : (
-                            DragState.hover-valid ? "Drop target" : "Invalid"
+                        text: DragState.hover-target == "none" ? @tr("Dragging") : (
+                            DragState.hover-valid ? @tr("Drop target") : @tr("Invalid")
                         );
                         color: DragState.hover-target == "none" ? #52514e : #ffffff;
                         font-size: 10px;
