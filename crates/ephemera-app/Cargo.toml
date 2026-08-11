@@ -13,6 +13,9 @@ chrono = "0.4"
 rfd = "0.16"
 dotenvy = "0.15"
 
+[dev-dependencies]
+tempfile = "3"
+
 [build-dependencies]
 slint-build = "1.17"
 

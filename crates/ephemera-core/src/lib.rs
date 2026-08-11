@@ -1,4 +1,5 @@
 pub mod cloud_store;
+pub mod config_file;
 pub mod db_store;
 pub mod error;
 pub mod metrics;
@@ -312,9 +313,20 @@ pub fn set_vault_path(state: &AppState, path: &str) -> Result<Config, AppError> 
         let mut vault = state.vault.lock().unwrap();
         *vault = vault::Vault::open(new_root)?;
     }
-    let mut cfg = state.config.lock().unwrap();
-    cfg.vault_path = path.to_string();
-    Ok(cfg.clone())
+    let cfg = {
+        let mut cfg = state.config.lock().unwrap();
+        cfg.vault_path = path.to_string();
+        cfg.clone()
+    };
+    // Persist the choice so the next launch starts on this vault
+    // (docs/01-requirements.md, "Configuration" MUST). Best-effort: the
+    // in-memory switch already succeeded, so a failed config write must not
+    // turn into a failed operation — the app keeps working exactly as it did
+    // before persistence existed.
+    if let Err(e) = config_file::save_vault_path(path) {
+        eprintln!("ephemera: vault path switched but could not be persisted: {e}");
+    }
+    Ok(cfg)
 }
 
 pub fn get_metrics(state: &AppState) -> Metrics {

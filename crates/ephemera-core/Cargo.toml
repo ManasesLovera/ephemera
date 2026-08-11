@@ -25,6 +25,12 @@ reqwest = { version = "0.12", features = ["json", "stream"] }
 jsonwebtoken = "9"
 base64 = "0.22"
 futures-util = "0.3"
+dirs = "6"
 
 [dev-dependencies]
 tempfile = "3"
+
+# Standalone workspace, same trick as ephemera-app: a stray parent workspace
+# (e.g. the pre-migration root Cargo.toml that still lists the deleted
+# src-tauri as a member) must not swallow this crate and break its builds.
+[workspace]
