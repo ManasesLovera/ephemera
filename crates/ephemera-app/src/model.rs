@@ -27,6 +27,7 @@ use crate::{
     AppWindow, CloudFile as UiCloudFile, CloudStatus as UiCloudStatus, DbFile as UiDbFile,
     DbStatus as UiDbStatus, DiskFile as UiDiskFile, FileMeta as UiFileMeta,
     FileTableRow as UiFileTableRow, HistoryPoint as UiHistoryPoint, Metrics as UiMetrics,
+    StreamReport as UiStreamReport,
 };
 
 /// Categorical slot colors matching App.css (--s1..--s8 and --other).
@@ -98,6 +99,7 @@ pub struct ShellState {
     history: Mutex<VecDeque<MetricPoint>>,
     db_status: Mutex<Option<core_types::DbStatus>>,
     cloud_status: Mutex<Option<core_types::CloudStatus>>,
+    stream_report: Mutex<Option<core_types::StreamReport>>,
 }
 
 impl ShellState {
@@ -114,6 +116,7 @@ impl ShellState {
             history: Mutex::new(VecDeque::new()),
             db_status: Mutex::new(None),
             cloud_status: Mutex::new(None),
+            stream_report: Mutex::new(None),
         })
     }
 
@@ -453,6 +456,16 @@ impl ShellState {
     pub fn push_vault_path(&self, window: &AppWindow) {
         window.set_vault_path(self.vault_path.clone().into());
     }
+
+    /// Store a stream report and project it into the window modal.
+    pub fn set_stream_report(&self, window: &AppWindow, report: core_types::StreamReport) {
+        let ui_report = ui_stream_report(&report);
+        if let Ok(mut slot) = self.stream_report.lock() {
+            *slot = Some(report);
+        }
+        window.set_stream_report(ui_report);
+        window.set_show_stream_report(true);
+    }
 }
 
 // ---- projection: core types → Slint structs (metadata only) ----------------
@@ -550,6 +563,31 @@ fn ui_cloud_status(s: &core_types::CloudStatus) -> UiCloudStatus {
     }
 }
 
+pub fn ui_stream_report(r: &core_types::StreamReport) -> UiStreamReport {
+    UiStreamReport {
+        file_name: r.file_name.clone().into(),
+        bytes_total: r.bytes_total as i32,
+        chunk_size: r.chunk_size as i32,
+        elapsed_ms: r.elapsed_ms as i32,
+        throughput_mb_s: format_throughput(r.throughput_mb_s).into(),
+        bytes_total_formatted: format_bytes(r.bytes_total).into(),
+        chunk_size_formatted: format_bytes(r.chunk_size).into(),
+        elapsed_ms_formatted: format_ms(r.elapsed_ms).into(),
+        buffered_equivalent_peak_bytes: r.buffered_equivalent_peak_bytes as i32,
+        buffered_equivalent_peak_bytes_formatted: format_bytes(r.buffered_equivalent_peak_bytes).into(),
+        max_concurrent_streaming: r.max_concurrent_streaming as i32,
+        max_concurrent_buffered: r.max_concurrent_buffered as i32,
+        rss_baseline_bytes: r.rss_baseline_bytes as i32,
+        rss_baseline_formatted: format_bytes(r.rss_baseline_bytes).into(),
+        rss_peak_bytes: r.rss_peak_bytes as i32,
+        rss_peak_formatted: format_bytes(r.rss_peak_bytes).into(),
+        rss_avg_bytes: r.rss_avg_bytes as i32,
+        rss_avg_formatted: format_bytes(r.rss_avg_bytes).into(),
+        rss_peak_delta_bytes: r.rss_peak_delta_bytes as i32,
+        rss_peak_delta_formatted: format_bytes(r.rss_peak_delta_bytes.max(0) as u64).into(),
+    }
+}
+
 // ---- formatting (mirrors src/lib/format.ts) --------------------------------
 
 pub fn format_bytes(bytes: u64) -> String {
@@ -561,6 +599,22 @@ pub fn format_bytes(bytes: u64) -> String {
         return format!("{kb:.1} KB");
     }
     format!("{:.1} MB", kb / 1024.0)
+}
+
+pub fn format_ms(ms: u64) -> String {
+    if ms < 1000 {
+        format!("{ms} ms")
+    } else {
+        format!("{:.2} s", ms as f64 / 1000.0)
+    }
+}
+
+pub fn format_throughput(mb_per_sec: f64) -> String {
+    if mb_per_sec < 0.01 {
+        format!("{:.1} KB/s", mb_per_sec * 1024.0)
+    } else {
+        format!("{:.2} MB/s", mb_per_sec)
+    }
 }
 
 /// Renders an epoch-millis timestamp as a local wall-clock string. The raw `i64`
@@ -756,5 +810,39 @@ mod tests {
         assert_eq!(rows[0].name, "photo.jpg");
         assert_eq!(rows[0].size_formatted, "2.1 MB");
         assert_eq!(rows[0].mime, "image/jpeg");
+    }
+
+    #[test]
+    fn format_ms_and_throughput_matches_frontend() {
+        assert_eq!(format_ms(250), "250 ms");
+        assert_eq!(format_ms(1500), "1.50 s");
+        assert_eq!(format_throughput(0.005), "5.1 KB/s");
+        assert_eq!(format_throughput(12.34), "12.34 MB/s");
+    }
+
+    #[test]
+    fn stream_report_projection_carries_all_fields() {
+        let report = ephemera_core::types::StreamReport {
+            file_name: "test.dat".into(),
+            bytes_total: 5_000_000,
+            chunk_size: 262_144,
+            elapsed_ms: 120,
+            throughput_mb_s: 41.67,
+            rss_baseline_bytes: 10_000_000,
+            rss_peak_bytes: 10_262_144,
+            rss_avg_bytes: 10_100_000,
+            rss_peak_delta_bytes: 262_144,
+            buffered_equivalent_peak_bytes: 5_000_000,
+            max_concurrent_streaming: 40,
+            max_concurrent_buffered: 2,
+        };
+        let ui = ui_stream_report(&report);
+        assert_eq!(ui.file_name, "test.dat");
+        assert_eq!(ui.bytes_total_formatted, "4.8 MB");
+        assert_eq!(ui.chunk_size_formatted, "256.0 KB");
+        assert_eq!(ui.elapsed_ms_formatted, "120 ms");
+        assert_eq!(ui.throughput_mb_s, "41.67 MB/s");
+        assert_eq!(ui.max_concurrent_streaming, 40);
+        assert_eq!(ui.max_concurrent_buffered, 2);
     }
 }

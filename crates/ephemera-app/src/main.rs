@@ -140,7 +140,8 @@ fn main() -> Result<(), slint::PlatformError> {
                         |_| {},
                     );
                     match res {
-                        Ok(_report) => {
+                        Ok(report) => {
+                            shared.set_stream_report(&window, report);
                             shared.refresh_disk(&window);
                         }
                         Err(e) => {
@@ -148,6 +149,15 @@ fn main() -> Result<(), slint::PlatformError> {
                         }
                     }
                 }
+            }
+        });
+    }
+
+    {
+        let weak = window.as_weak();
+        window.on_close_stream_report(move || {
+            if let Some(window) = weak.upgrade() {
+                window.set_show_stream_report(false);
             }
         });
     }
