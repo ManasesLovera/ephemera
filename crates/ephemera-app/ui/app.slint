@@ -637,6 +637,13 @@ component RamPane inherits Rectangle {
             segments: files;
         }
 
+        // Click-to-browse only: unlike the Tauri build (which received real OS
+        // file-manager drops via a native Tauri event), Slint 1.17's DropArea/
+        // DataTransfer API carries only images, plain text, and same-process
+        // payloads — no file paths — so external OS drag-and-drop of files
+        // from outside this window cannot be wired up on this Slint version.
+        // In-app dragging a file between panes (is-drop-target/DragState
+        // below) is unaffected; that path never needed OS file data.
         Rectangle {
             height: 70px;
             background: is-drop-target ? #fce0e0 : (drop-touch.has-hover ? #f4f1ea : #f9f9f7);
@@ -649,7 +656,7 @@ component RamPane inherits Rectangle {
             }
 
             Text {
-                text: is-drop-target ? drop-reason : (files.length == 0 ? "drop files here or click to browse" : files.length + " file(s) in RAM");
+                text: is-drop-target ? drop-reason : (files.length == 0 ? "click to browse for files" : files.length + " file(s) in RAM");
                 color: is-drop-target ? #d03b3b : #898781;
                 font-size: 13px;
                 font-weight: is-drop-target ? 600 : 400;
