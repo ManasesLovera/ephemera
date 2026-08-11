@@ -10,7 +10,7 @@
 // NEVER file byte content. The authoritative byte stores live exclusively inside
 // `ephemera_core::state::AppState` (RAM heap buffer, vault folder, Postgres, GCS).
 
-import { Button, HorizontalBox, VerticalBox, ScrollView } from "std-widgets.slint";
+import { HorizontalBox, VerticalBox, ScrollView } from "std-widgets.slint";
 
 // ---------------------------------------------------------------------------
 // State model structs.
@@ -1542,7 +1542,7 @@ export component AppWindow inherits Window {
                 font-size: 14px;
                 vertical-alignment: center;
             }
-            Button {
+            PaneButton {
                 text: "Refresh";
                 clicked => { root.refresh-all(); }
             }
