@@ -123,7 +123,12 @@ impl ShellState {
             *slot = files.clone();
         }
         let mut assigner = self.color_assigner.lock().unwrap();
-        window.set_ram_files(meta_model(files.iter().map(|f| ui_file_meta(f, &mut assigner)).collect()));
+        window.set_ram_files(meta_model(
+            files
+                .iter()
+                .map(|f| ui_file_meta(f, &mut assigner))
+                .collect(),
+        ));
         self.sync_file_counts(window);
     }
 
@@ -134,7 +139,18 @@ impl ShellState {
             *slot = files.clone();
         }
         let mut assigner = self.color_assigner.lock().unwrap();
-        window.set_disk_files(disk_model(files.iter().map(|f| ui_disk_file(f, &mut assigner)).collect()));
+        window.set_disk_files(disk_model(
+            files
+                .iter()
+                .map(|f| ui_disk_file(f, &mut assigner))
+                .collect(),
+        ));
+        window.set_disk_meta_files(meta_model(
+            files
+                .iter()
+                .map(|f| ui_file_meta(&f.meta, &mut assigner))
+                .collect(),
+        ));
         self.sync_file_counts(window);
     }
 
@@ -197,9 +213,14 @@ impl ShellState {
 
         let mut assigner = self.color_assigner.lock().unwrap();
         window.set_db_status(status.as_ref().map(ui_db_status).unwrap_or_default());
-        window.set_db_files(db_model(files.iter().map(|f| ui_db_file(f, &mut assigner)).collect()));
+        window.set_db_files(db_model(
+            files.iter().map(|f| ui_db_file(f, &mut assigner)).collect(),
+        ));
         window.set_db_meta_files(meta_model(
-            files.iter().map(|f| ui_file_meta(&f.meta, &mut assigner)).collect(),
+            files
+                .iter()
+                .map(|f| ui_file_meta(&f.meta, &mut assigner))
+                .collect(),
         ));
         window.set_db_used_text(
             (if connected {
@@ -273,9 +294,17 @@ impl ShellState {
 
         let mut assigner = self.color_assigner.lock().unwrap();
         window.set_cloud_status(status.as_ref().map(ui_cloud_status).unwrap_or_default());
-        window.set_cloud_files(cloud_model(files.iter().map(|f| ui_cloud_file(f, &mut assigner)).collect()));
+        window.set_cloud_files(cloud_model(
+            files
+                .iter()
+                .map(|f| ui_cloud_file(f, &mut assigner))
+                .collect(),
+        ));
         window.set_cloud_meta_files(meta_model(
-            files.iter().map(|f| ui_file_meta(&f.meta, &mut assigner)).collect(),
+            files
+                .iter()
+                .map(|f| ui_file_meta(&f.meta, &mut assigner))
+                .collect(),
         ));
         window.set_cloud_used_text(
             (if connected {
@@ -356,15 +385,15 @@ pub fn describe_error(err: &ephemera_core::error::AppError) -> String {
         ephemera_core::error::AppError::QuotaExceeded { needed, free, cap } => {
             format!(
                 "Quota exceeded — need {} KB more, {} KB free of {} MB.",
-                (needed + 1023) / 1024,
-                (free + 1023) / 1024,
+                needed.div_ceil(1024),
+                free.div_ceil(1024),
                 cap / 1024 / 1024
             )
         }
         ephemera_core::error::AppError::FileTooLarge { size, cap } => {
             format!(
                 "File too large: {} MB, cap is {} MB. Try \"Stream to disk\" instead.",
-                (size + 1024 * 1024 - 1) / 1024 / 1024,
+                size.div_ceil(1024 * 1024),
                 cap / 1024 / 1024
             )
         }
@@ -538,6 +567,22 @@ mod tests {
         assert_eq!(ui.size_formatted, "2.1 MB");
         // created_at is rendered, not dropped.
         assert!(!ui.created_at.is_empty());
+    }
+
+    #[test]
+    fn color_assigner_is_stable_per_id_and_caps_at_other() {
+        let mut assigner = ColorAssigner::default();
+        let first = assigner.color_for("a");
+        let second = assigner.color_for("b");
+        // Same id keeps its slot; different ids get different slots.
+        assert_eq!(assigner.color_for("a"), first);
+        assert_ne!(assigner.color_for("b"), first);
+        let _ = second;
+        // Past the 8 categorical slots, everything folds into the "other" gray.
+        for i in 0..20 {
+            let _ = assigner.color_for(&format!("x{i}"));
+        }
+        assert_eq!(assigner.color_for("y"), OTHER_COLOR);
     }
 
     #[test]
