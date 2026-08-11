@@ -112,6 +112,19 @@ fn main() -> Result<(), slint::PlatformError> {
     let window = AppWindow::new()?;
     let shared = ShellState::new(core, vault_path.to_string_lossy().to_string());
 
+    // Config file path for persistent app preferences (theme, etc.)
+    let app_config_path = config_dir.join("ephemera-config.json");
+    let initial_dark_mode = if let Ok(content) = std::fs::read_to_string(&app_config_path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            json.get("dark_mode").and_then(|v| v.as_bool()).unwrap_or(false)
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+    window.global::<Theme>().set_dark_mode(initial_dark_mode);
+
     // Initial synchronous refresh (RAM/disk/vault are in-process and cheap), plus
     // the seeded db/cloud snapshots.
     shared.refresh_ram(&window);
@@ -119,6 +132,33 @@ fn main() -> Result<(), slint::PlatformError> {
     shared.push_vault_path(&window);
     shared.apply_db(&window, db_status, db_files);
     shared.apply_cloud(&window, cloud_status, cloud_files);
+
+    // Toggle dark mode and persist preference to config file.
+    {
+        let weak = window.as_weak();
+        let config_path = app_config_path.clone();
+        window.on_toggle_dark_mode(move || {
+            if let Some(window) = weak.upgrade() {
+                let theme = window.global::<Theme>();
+                let new_mode = !theme.get_dark_mode();
+                theme.set_dark_mode(new_mode);
+
+                // Save setting to ephemera-config.json
+                let mut map = if let Ok(content) = std::fs::read_to_string(&config_path) {
+                    serde_json::from_str::<serde_json::Value>(&content)
+                        .ok()
+                        .and_then(|v| v.as_object().cloned())
+                        .unwrap_or_default()
+                } else {
+                    serde_json::Map::new()
+                };
+                map.insert("dark_mode".to_string(), serde_json::Value::Bool(new_mode));
+                if let Ok(json_str) = serde_json::to_string_pretty(&map) {
+                    let _ = std::fs::write(&config_path, json_str);
+                }
+            }
+        });
+    }
 
     // Slint → Rust callback. The old React `refreshAll` zustand action crossed
     // IPC; this is a plain Rust closure running in the same process.

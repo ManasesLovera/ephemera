@@ -130,6 +130,51 @@ export global DragState {
 }
 
 // ---------------------------------------------------------------------------
+// Design System & Theme global palette.
+// ---------------------------------------------------------------------------
+
+export global Theme {
+    in-out property <bool> dark-mode: false;
+
+    // Backgrounds & Surface levels
+    out property <color> window-bg: dark-mode ? #181a1f : #f4f1ea;
+    out property <color> card-bg: dark-mode ? #21252b : #fffdf8;
+    out property <color> card-bg-hover: dark-mode ? #282c34 : #fbfaf5;
+    out property <color> card-bg-dragged: dark-mode ? #2c313a : #f4f1ea;
+    out property <color> dropzone-bg: dark-mode ? #282c34 : #f9f9f7;
+    out property <color> dropzone-bg-hover: dark-mode ? #31353f : #f4f1ea;
+
+    // Borders
+    out property <color> border-light: dark-mode ? #31353f : #e1e0d9;
+    out property <color> border-medium: dark-mode ? #3e4451 : #c3c2b7;
+    out property <color> border-card: dark-mode ? #3e4451 : #c9c1b4;
+
+    // Text colors
+    out property <color> text-primary: dark-mode ? #e6e6e6 : #24303a;
+    out property <color> text-secondary: dark-mode ? #abb2bf : #52514e;
+    out property <color> text-muted: dark-mode ? #9da5b4 : #68747b;
+    out property <color> text-faint: dark-mode ? #6c7280 : #898781;
+
+    // Accents & Actions
+    out property <color> primary: dark-mode ? #4c97f6 : #2a78d6;
+    out property <color> primary-hover: dark-mode ? #3685e5 : #1f64b8;
+    out property <color> danger: dark-mode ? #e05555 : #d03b3b;
+    out property <color> danger-bg: dark-mode ? #3e2023 : #fde8e8;
+    out property <color> danger-bg-hover: dark-mode ? #4e262a : #fce0e0;
+    out property <color> success: dark-mode ? #1baf7a : #1baf7a;
+    out property <color> success-bg: dark-mode ? #1e382b : #e8f5e9;
+    out property <color> success-bg-hover: dark-mode ? #254736 : #c8e6c9;
+    out property <color> handle-color: dark-mode ? #5c6370 : #b7b6ae;
+    out property <color> sink-indicator: dark-mode ? #10b981 : #008300;
+    out property <color> sink-text: dark-mode ? #e6e6e6 : #0b0b0b;
+
+    // Charts & Sparklines
+    out property <color> sparkline-ram: dark-mode ? #4c97f6 : #2a78d6;
+    out property <color> sparkline-rss: dark-mode ? #ff7b42 : #eb6834;
+    out property <color> note-text: dark-mode ? #7f848e : #9a9386;
+}
+
+// ---------------------------------------------------------------------------
 // KPI row stat tile.
 // ---------------------------------------------------------------------------
 
@@ -138,8 +183,8 @@ component StatTile inherits Rectangle {
     in property <string> tile-value;
     in property <string> tile-caption;
 
-    background: #fffdf8;
-    border-color: #c9c1b4;
+    background: Theme.card-bg;
+    border-color: Theme.border-card;
     border-width: 1px;
     border-radius: 6px;
 
@@ -148,18 +193,18 @@ component StatTile inherits Rectangle {
         spacing: 2px;
         Text {
             text: tile-label;
-            color: #68747b;
+            color: Theme.text-muted;
             font-size: 12px;
         }
         Text {
             text: tile-value;
-            color: #24303a;
+            color: Theme.text-primary;
             font-size: 22px;
             font-weight: 700;
         }
         Text {
             text: tile-caption;
-            color: #68747b;
+            color: Theme.text-muted;
             font-size: 12px;
         }
     }
@@ -177,8 +222,8 @@ component ActionButton inherits Rectangle {
     height: 22px;
     border-radius: 5px;
     border-width: 1px;
-    border-color: touch.has-hover ? #c3c2b7 : #e1e0d9;
-    background: touch.has-hover ? #e1e0d9 : #fffdf8;
+    border-color: touch.has-hover ? Theme.border-medium : Theme.border-light;
+    background: touch.has-hover ? Theme.border-light : Theme.card-bg;
 
     touch := TouchArea {
         clicked => { root.clicked(); }
@@ -189,7 +234,7 @@ component ActionButton inherits Rectangle {
         padding-right: 6px;
         Text {
             text: root.text;
-            color: danger ? #d03b3b : #52514e;
+            color: danger ? Theme.danger : Theme.text-secondary;
             font-size: 11px;
             horizontal-alignment: center;
             vertical-alignment: center;
@@ -210,8 +255,8 @@ component PaneButton inherits Rectangle {
     height: 30px;
     border-radius: 6px;
     border-width: 1px;
-    border-color: primary ? #2a78d6 : (touch.has-hover ? #c3c2b7 : #e1e0d9);
-    background: primary ? (touch.has-hover ? #1f64b8 : #2a78d6) : (touch.has-hover ? #e1e0d9 : #fffdf8);
+    border-color: primary ? Theme.primary : (touch.has-hover ? Theme.border-medium : Theme.border-light);
+    background: primary ? (touch.has-hover ? Theme.primary-hover : Theme.primary) : (touch.has-hover ? Theme.border-light : Theme.card-bg);
 
     touch := TouchArea {
         clicked => { root.clicked(); }
@@ -222,7 +267,7 @@ component PaneButton inherits Rectangle {
         padding-right: 12px;
         Text {
             text: root.text;
-            color: primary ? #ffffff : (danger ? #d03b3b : #24303a);
+            color: primary ? #ffffff : (danger ? Theme.danger : Theme.text-primary);
             font-size: 12px;
             font-weight: primary ? 600 : 500;
             horizontal-alignment: center;
@@ -242,14 +287,14 @@ component Meter inherits VerticalBox {
     in property <string> cap-text: "10.0 MB";
     in property <[FileMeta]> segments;
     in property <int> preview-add-bytes: 0;
-    in property <color> preview-add-color: #1baf7a;
+    in property <color> preview-add-color: Theme.success;
 
     spacing: 4px;
     padding: 0px;
 
     Rectangle {
         height: 22px;
-        background: #e1e0d9;
+        background: Theme.border-light;
         border-radius: 6px;
         clip: true;
 
@@ -281,13 +326,13 @@ component Meter inherits VerticalBox {
         padding: 0px;
         Text {
             text: used-text;
-            color: #52514e;
+            color: Theme.text-secondary;
             font-size: 11px;
             horizontal-alignment: left;
         }
         Text {
             text: "of " + cap-text;
-            color: #52514e;
+            color: Theme.text-secondary;
             font-size: 11px;
             horizontal-alignment: right;
         }
@@ -307,8 +352,8 @@ component DiskFileCard inherits Rectangle {
 
     property <bool> is-dragged: DragState.active && DragState.file-id == meta.id && DragState.source-tier == "disk";
 
-    background: is-dragged ? #f4f1ea : (card-touch.has-hover ? #fbfaf5 : #fffdf8);
-    border-color: is-dragged ? #eb6834 : (card-touch.has-hover ? #c3c2b7 : #e1e0d9);
+    background: is-dragged ? Theme.card-bg-dragged : (card-touch.has-hover ? Theme.card-bg-hover : Theme.card-bg);
+    border-color: is-dragged ? #eb6834 : (card-touch.has-hover ? Theme.border-medium : Theme.border-light);
     border-width: 1px;
     border-radius: 8px;
     height: 36px;
@@ -386,7 +431,7 @@ component DiskFileCard inherits Rectangle {
         // Drag handle indicator
         Text {
             text: "⋮⋮";
-            color: #b7b6ae;
+            color: Theme.handle-color;
             font-size: 13px;
             vertical-alignment: center;
         }
@@ -402,7 +447,7 @@ component DiskFileCard inherits Rectangle {
         // File name
         Text {
             text: meta.name;
-            color: #24303a;
+            color: Theme.text-primary;
             font-size: 12px;
             overflow: elide;
             horizontal-stretch: 1;
@@ -412,7 +457,7 @@ component DiskFileCard inherits Rectangle {
         // Formatted size
         Text {
             text: meta.size-formatted;
-            color: #68747b;
+            color: Theme.text-muted;
             font-size: 12px;
             vertical-alignment: center;
         }
@@ -448,8 +493,8 @@ component FileCard inherits Rectangle {
 
     property <bool> is-dragged: DragState.active && DragState.file-id == meta.id && DragState.source-tier == "ram";
 
-    background: is-dragged ? #f4f1ea : (card-touch.has-hover ? #fbfaf5 : #fffdf8);
-    border-color: is-dragged ? #2a78d6 : (card-touch.has-hover ? #c3c2b7 : #e1e0d9);
+    background: is-dragged ? Theme.card-bg-dragged : (card-touch.has-hover ? Theme.card-bg-hover : Theme.card-bg);
+    border-color: is-dragged ? Theme.primary : (card-touch.has-hover ? Theme.border-medium : Theme.border-light);
     border-width: 1px;
     border-radius: 8px;
     height: 36px;
@@ -529,7 +574,7 @@ component FileCard inherits Rectangle {
         // Drag handle indicator
         Text {
             text: "⋮⋮";
-            color: #b7b6ae;
+            color: Theme.handle-color;
             font-size: 13px;
             vertical-alignment: center;
         }
@@ -545,7 +590,7 @@ component FileCard inherits Rectangle {
         // File name
         Text {
             text: meta.name;
-            color: #24303a;
+            color: Theme.text-primary;
             font-size: 12px;
             overflow: elide;
             horizontal-stretch: 1;
@@ -555,7 +600,7 @@ component FileCard inherits Rectangle {
         // Formatted size
         Text {
             text: meta.size-formatted;
-            color: #68747b;
+            color: Theme.text-muted;
             font-size: 12px;
             vertical-alignment: center;
         }
@@ -604,8 +649,8 @@ component RamPane inherits Rectangle {
     property <bool> drop-valid: DragState.hover-valid;
     property <string> drop-reason: DragState.hover-reason;
 
-    background: is-drop-target ? #fde8e8 : #fffdf8;
-    border-color: is-drop-target ? #d03b3b : #c9c1b4;
+    background: is-drop-target ? Theme.danger-bg : Theme.card-bg;
+    border-color: is-drop-target ? Theme.danger : Theme.border-card;
     border-width: is-drop-target ? 2px : 1px;
     border-radius: 12px;
 
@@ -617,13 +662,13 @@ component RamPane inherits Rectangle {
             spacing: 6px;
             Text {
                 text: "RAM";
-                color: #24303a;
+                color: Theme.text-primary;
                 font-size: 16px;
                 font-weight: 700;
             }
             Text {
                 text: "volatile — cleared when app closes";
-                color: #68747b;
+                color: Theme.text-muted;
                 font-size: 11px;
                 vertical-alignment: center;
             }
@@ -646,9 +691,9 @@ component RamPane inherits Rectangle {
         // below) is unaffected; that path never needed OS file data.
         Rectangle {
             height: 70px;
-            background: is-drop-target ? #fce0e0 : (drop-touch.has-hover ? #f4f1ea : #f9f9f7);
+            background: is-drop-target ? Theme.danger-bg-hover : (drop-touch.has-hover ? Theme.dropzone-bg-hover : Theme.dropzone-bg);
             border-width: 2px;
-            border-color: is-drop-target ? #d03b3b : (drop-touch.has-hover ? #2a78d6 : #c3c2b7);
+            border-color: is-drop-target ? Theme.danger : (drop-touch.has-hover ? Theme.primary : Theme.border-medium);
             border-radius: 10px;
 
             drop-touch := TouchArea {
@@ -657,7 +702,7 @@ component RamPane inherits Rectangle {
 
             Text {
                 text: is-drop-target ? drop-reason : (files.length == 0 ? "click to browse for files" : files.length + " file(s) in RAM");
-                color: is-drop-target ? #d03b3b : #898781;
+                color: is-drop-target ? Theme.danger : Theme.text-faint;
                 font-size: 13px;
                 font-weight: is-drop-target ? 600 : 400;
                 horizontal-alignment: center;
@@ -726,8 +771,8 @@ component DiskPane inherits Rectangle {
     property <string> drop-reason: DragState.hover-reason;
     property <int> preview-add-bytes: DragState.active && is-drop-target && drop-valid ? DragState.file-size : 0;
 
-    background: is-drop-target ? (drop-valid ? #e8f5e9 : #fde8e8) : #fffdf8;
-    border-color: is-drop-target ? (drop-valid ? #1baf7a : #d03b3b) : (DragState.active && DragState.source-tier == "ram" ? #2a78d6 : #c9c1b4);
+    background: is-drop-target ? (drop-valid ? Theme.success-bg : Theme.danger-bg) : Theme.card-bg;
+    border-color: is-drop-target ? (drop-valid ? Theme.success : Theme.danger) : (DragState.active && DragState.source-tier == "ram" ? Theme.primary : Theme.border-card);
     border-width: (is-drop-target || (DragState.active && DragState.source-tier == "ram")) ? 2px : 1px;
     border-radius: 12px;
 
@@ -739,13 +784,13 @@ component DiskPane inherits Rectangle {
             spacing: 6px;
             Text {
                 text: "DISK";
-                color: #24303a;
+                color: Theme.text-primary;
                 font-size: 16px;
                 font-weight: 700;
             }
             Text {
                 text: "persistent — survives a restart";
-                color: #68747b;
+                color: Theme.text-muted;
                 font-size: 11px;
                 vertical-alignment: center;
             }
@@ -763,14 +808,14 @@ component DiskPane inherits Rectangle {
 
         Rectangle {
             height: 70px;
-            background: is-drop-target ? (drop-valid ? #c8e6c9 : #fce0e0) : #f9f9f7;
+            background: is-drop-target ? (drop-valid ? Theme.success-bg-hover : Theme.danger-bg-hover) : Theme.dropzone-bg;
             border-width: 2px;
-            border-color: is-drop-target ? (drop-valid ? #1baf7a : #d03b3b) : #c3c2b7;
+            border-color: is-drop-target ? (drop-valid ? Theme.success : Theme.danger) : Theme.border-medium;
             border-radius: 10px;
 
             Text {
                 text: is-drop-target ? drop-reason : (files.length == 0 ? "drag from RAM to keep" : files.length + " file(s) on disk");
-                color: is-drop-target ? (drop-valid ? #1b5e20 : #d03b3b) : #898781;
+                color: is-drop-target ? (drop-valid ? Theme.success : Theme.danger) : Theme.text-faint;
                 font-size: 13px;
                 font-weight: is-drop-target ? 600 : 400;
                 horizontal-alignment: center;
@@ -806,7 +851,7 @@ component DiskPane inherits Rectangle {
             }
             Text {
                 text: root.vault-path;
-                color: #68747b;
+                color: Theme.text-muted;
                 font-size: 11px;
                 vertical-alignment: center;
                 overflow: elide;
@@ -827,8 +872,8 @@ component SinkFileCard inherits Rectangle {
     in property <string> delete-title: "Delete file";
     callback delete-clicked();
 
-    background: #ffffff;
-    border-color: #e1e0d9;
+    background: Theme.card-bg;
+    border-color: Theme.border-light;
     border-width: 1px;
     border-radius: 8px;
     height: 36px;
@@ -845,13 +890,13 @@ component SinkFileCard inherits Rectangle {
             width: 10px;
             height: 10px;
             border-radius: 3px;
-            background: #008300;
+            background: Theme.sink-indicator;
         }
 
         // File name
         Text {
             text: meta.name;
-            color: #0b0b0b;
+            color: Theme.sink-text;
             font-size: 12px;
             horizontal-stretch: 1;
             overflow: elide;
@@ -861,7 +906,7 @@ component SinkFileCard inherits Rectangle {
         // Size
         Text {
             text: meta.size-formatted;
-            color: #898781;
+            color: Theme.text-faint;
             font-size: 11px;
             vertical-alignment: center;
         }
@@ -872,12 +917,12 @@ component SinkFileCard inherits Rectangle {
             height: 24px;
             border-radius: 5px;
             border-width: 1px;
-            border-color: #e1e0d9;
-            background: touch.has-hover ? #e1e0d9 : transparent;
+            border-color: Theme.border-light;
+            background: touch.has-hover ? Theme.border-light : transparent;
 
             Text {
                 text: "✕";
-                color: #52514e;
+                color: Theme.text-secondary;
                 font-size: 11px;
                 horizontal-alignment: center;
                 vertical-alignment: center;
@@ -915,8 +960,8 @@ component SinkPanel inherits Rectangle {
     property <string> drop-reason: DragState.hover-reason;
     property <int> preview-add-bytes: DragState.active && is-drop-target && drop-valid ? DragState.file-size : 0;
 
-    background: is-drop-target ? (drop-valid ? #e8f5e9 : #fde8e8) : #fffdf8;
-    border-color: is-drop-target ? (drop-valid ? #1baf7a : #d03b3b) : #c9c1b4;
+    background: is-drop-target ? (drop-valid ? Theme.success-bg : Theme.danger-bg) : Theme.card-bg;
+    border-color: is-drop-target ? (drop-valid ? Theme.success : Theme.danger) : Theme.border-card;
     border-width: is-drop-target ? 2px : 1px;
     border-radius: 12px;
 
@@ -930,19 +975,19 @@ component SinkPanel inherits Rectangle {
             padding: 0px;
             Text {
                 text: title;
-                color: #24303a;
+                color: Theme.text-primary;
                 font-size: 14px;
                 font-weight: 700;
             }
             Text {
                 text: subtitle;
-                color: #68747b;
+                color: Theme.text-muted;
                 font-size: 11px;
                 vertical-alignment: center;
             }
             if is-drop-target: Text {
                 text: drop-reason;
-                color: drop-valid ? #1b5e20 : #d03b3b;
+                color: drop-valid ? Theme.success : Theme.danger;
                 font-size: 11px;
                 font-weight: 600;
                 horizontal-stretch: 1;
@@ -953,7 +998,7 @@ component SinkPanel inherits Rectangle {
 
         // Offline state
         if !connected : Rectangle {
-            background: #e1e0d9;
+            background: Theme.border-light;
             border-radius: 8px;
 
             VerticalLayout {
@@ -961,7 +1006,7 @@ component SinkPanel inherits Rectangle {
 
                 Text {
                     text: offline-message != "" ? offline-message : "offline";
-                    color: #52514e;
+                    color: Theme.text-secondary;
                     font-size: 12px;
                     wrap: word-wrap;
                 }
@@ -976,7 +1021,7 @@ component SinkPanel inherits Rectangle {
             // Segmented Meter Track (100 MB cap visualization)
             Rectangle {
                 height: 22px;
-                background: #e1e0d9;
+                background: Theme.border-light;
                 border-radius: 6px;
                 clip: true;
 
@@ -986,7 +1031,7 @@ component SinkPanel inherits Rectangle {
 
                     if used-bytes > 0: Rectangle {
                         horizontal-stretch: max(1, used-bytes);
-                        background: #008300;
+                        background: Theme.sink-indicator;
                     }
 
                     if preview-add-bytes > 0: Rectangle {
@@ -1009,13 +1054,13 @@ component SinkPanel inherits Rectangle {
                 padding: 0px;
                 Text {
                     text: used-text;
-                    color: #52514e;
+                    color: Theme.text-secondary;
                     font-size: 11px;
                     horizontal-alignment: left;
                 }
                 Text {
                     text: "of " + cap-text;
-                    color: #52514e;
+                    color: Theme.text-secondary;
                     font-size: 11px;
                     horizontal-alignment: right;
                 }
@@ -1024,14 +1069,14 @@ component SinkPanel inherits Rectangle {
             // Physical Note / Extra Detail
             if detail-text != "" : Text {
                 text: detail-text;
-                color: #898781;
+                color: Theme.text-faint;
                 font-size: 11px;
             }
 
             // File List
             if files.length == 0 : Text {
                 text: "No files stored in this tier yet";
-                color: #898781;
+                color: Theme.text-faint;
                 font-size: 11px;
             }
 
@@ -1062,11 +1107,11 @@ component Sparkline inherits Rectangle {
     in property <[HistoryPoint]> points;
     in property <int> max-value: 1;
     in property <bool> show-rss: false;
-    in property <color> bar-color: #2a78d6;
+    in property <color> bar-color: Theme.primary;
 
     height: 64px;
-    background: #fffdf8;
-    border-color: #e1e0d9;
+    background: Theme.card-bg;
+    border-color: Theme.border-light;
     border-width: 1px;
     border-radius: 6px;
     clip: true;
@@ -1119,7 +1164,7 @@ component Instruments inherits VerticalBox {
     Rectangle {
         height: 32px;
         border-radius: 6px;
-        background: touch.has-hover ? #e1e0d9 : transparent;
+        background: touch.has-hover ? Theme.border-light : transparent;
 
         touch := TouchArea {
             clicked => { open = !open; }
@@ -1131,7 +1176,7 @@ component Instruments inherits VerticalBox {
 
             Text {
                 text: open ? "▾ Instruments — time series · file table" : "▸ Instruments — time series · file table";
-                color: #24303a;
+                color: Theme.text-primary;
                 font-size: 13px;
                 font-weight: 600;
                 vertical-alignment: center;
@@ -1144,36 +1189,36 @@ component Instruments inherits VerticalBox {
 
         Text {
             text: ram-series-label;
-            color: #68747b;
+            color: Theme.text-muted;
             font-size: 11px;
         }
         Sparkline {
             points: history;
             max-value: ram-max;
-            bar-color: #2a78d6;
+            bar-color: Theme.sparkline-ram;
         }
 
         Text {
             text: rss-series-label;
-            color: #68747b;
+            color: Theme.text-muted;
             font-size: 11px;
         }
         Sparkline {
             points: history;
             max-value: rss-max;
             show-rss: true;
-            bar-color: #eb6834;
+            bar-color: Theme.sparkline-rss;
         }
 
         Text {
             text: axis-note;
-            color: #9a9386;
+            color: Theme.note-text;
             font-size: 11px;
         }
 
         Rectangle {
-            background: #fffdf8;
-            border-color: #e1e0d9;
+            background: Theme.card-bg;
+            border-color: Theme.border-light;
             border-width: 1px;
             border-radius: 6px;
             height: 200px;
@@ -1186,15 +1231,15 @@ component Instruments inherits VerticalBox {
                 spacing: 4px;
 
                 HorizontalLayout {
-                    Text { text: "Name"; color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 3; overflow: elide; }
-                    Text { text: "Size"; color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 1; }
-                    Text { text: "Tier"; color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 1; }
-                    Text { text: "Mime"; color: #52514e; font-size: 11px; font-weight: 600; horizontal-stretch: 2; overflow: elide; }
+                    Text { text: "Name"; color: Theme.text-secondary; font-size: 11px; font-weight: 600; horizontal-stretch: 3; overflow: elide; }
+                    Text { text: "Size"; color: Theme.text-secondary; font-size: 11px; font-weight: 600; horizontal-stretch: 1; }
+                    Text { text: "Tier"; color: Theme.text-secondary; font-size: 11px; font-weight: 600; horizontal-stretch: 1; }
+                    Text { text: "Mime"; color: Theme.text-secondary; font-size: 11px; font-weight: 600; horizontal-stretch: 2; overflow: elide; }
                 }
 
                 if table-rows.length == 0 : Text {
                     text: "no files in any tier yet";
-                    color: #898781;
+                    color: Theme.text-faint;
                     font-size: 11px;
                 }
 
@@ -1205,10 +1250,10 @@ component Instruments inherits VerticalBox {
                         spacing: 2px;
 
                         for row in table-rows: HorizontalLayout {
-                            Text { text: row.name; color: #24303a; font-size: 12px; horizontal-stretch: 3; vertical-alignment: center; overflow: elide; }
-                            Text { text: row.size-formatted; color: #68747b; font-size: 12px; horizontal-stretch: 1; vertical-alignment: center; }
-                            Text { text: row.tier; color: #68747b; font-size: 12px; horizontal-stretch: 1; vertical-alignment: center; }
-                            Text { text: row.mime; color: #68747b; font-size: 12px; horizontal-stretch: 2; vertical-alignment: center; overflow: elide; }
+                            Text { text: row.name; color: Theme.text-primary; font-size: 12px; horizontal-stretch: 3; vertical-alignment: center; overflow: elide; }
+                            Text { text: row.size-formatted; color: Theme.text-muted; font-size: 12px; horizontal-stretch: 1; vertical-alignment: center; }
+                            Text { text: row.tier; color: Theme.text-muted; font-size: 12px; horizontal-stretch: 1; vertical-alignment: center; }
+                            Text { text: row.mime; color: Theme.text-muted; font-size: 12px; horizontal-stretch: 2; vertical-alignment: center; overflow: elide; }
                         }
                     }
                 }
@@ -1233,8 +1278,8 @@ component StreamModal inherits Rectangle {
 
     Rectangle {
         width: 580px;
-        background: #fffdf8;
-        border-color: #c9c1b4;
+        background: Theme.card-bg;
+        border-color: Theme.border-card;
         border-width: 1px;
         border-radius: 12px;
 
@@ -1246,7 +1291,7 @@ component StreamModal inherits Rectangle {
 
             Text {
                 text: "Streaming report — " + report.file-name;
-                color: #24303a;
+                color: Theme.text-primary;
                 font-size: 18px;
                 font-weight: 700;
                 overflow: elide;
@@ -1254,7 +1299,7 @@ component StreamModal inherits Rectangle {
 
             Text {
                 text: report.bytes-total-formatted + " moved in " + report.elapsed-ms-formatted + " (" + report.throughput-mb-s + "), reading/writing in fixed " + report.chunk-size-formatted + " chunks — peak memory for this operation never exceeds one chunk, regardless of file size.";
-                color: #68747b;
+                color: Theme.text-muted;
                 font-size: 13px;
                 wrap: word-wrap;
             }
@@ -1291,7 +1336,7 @@ component StreamModal inherits Rectangle {
 
             Text {
                 text: "RSS during transfer — baseline " + report.rss-baseline-formatted + ", peak " + report.rss-peak-formatted + ", average " + report.rss-avg-formatted + " (delta " + report.rss-peak-delta-formatted + "). Concurrency figures are calculated against the 10 MB RAM cap, not live-measured.";
-                color: #898781;
+                color: Theme.text-faint;
                 font-size: 11px;
                 wrap: word-wrap;
             }
@@ -1318,7 +1363,7 @@ export component AppWindow inherits Window {
     title: "Ephemera — RAM vs Disk vs Database vs Cloud";
     width: 1280px;
     height: 860px;
-    background: #f4f1ea;
+    background: Theme.window-bg;
 
     // ---- State model: mirrors src/store/useAppStore.ts -------------------
     in-out property <string> vault-path: "";
@@ -1413,6 +1458,7 @@ export component AppWindow inherits Window {
     callback save-disk-to-cloud(string);
     callback delete-from-disk(string);
     callback clear-error();
+    callback toggle-dark-mode();
 
     // Drag target tracking logic
     property <bool> pointer-in-ram: DragState.active &&
@@ -1503,9 +1549,9 @@ export component AppWindow inherits Window {
         spacing: 12px;
 
         if root.error-message != "": Rectangle {
-            background: #fde8e8;
+            background: Theme.danger-bg;
             border-width: 1px;
-            border-color: #d03b3b;
+            border-color: Theme.danger;
             border-radius: 8px;
             height: 38px;
 
@@ -1515,7 +1561,7 @@ export component AppWindow inherits Window {
                 spacing: 8px;
                 Text {
                     text: root.error-message;
-                    color: #d03b3b;
+                    color: Theme.danger;
                     font-size: 13px;
                     horizontal-stretch: 1;
                     vertical-alignment: center;
@@ -1532,15 +1578,19 @@ export component AppWindow inherits Window {
             spacing: 12px;
             Text {
                 text: "Ephemera";
-                color: #24303a;
+                color: Theme.text-primary;
                 font-size: 28px;
                 font-weight: 700;
             }
             Text {
                 text: "vault: " + root.vault-path;
-                color: #68747b;
+                color: Theme.text-muted;
                 font-size: 14px;
                 vertical-alignment: center;
+            }
+            PaneButton {
+                text: Theme.dark-mode ? "☀️ Light" : "🌙 Dark";
+                clicked => { root.toggle-dark-mode(); }
             }
             PaneButton {
                 text: "Refresh";
@@ -1653,11 +1703,11 @@ export component AppWindow inherits Window {
         width: 220px;
         height: 40px;
 
-        background: #ffffffe6;
+        background: Theme.card-bg;
         border-radius: 8px;
         border-width: 2px;
-        border-color: DragState.hover-target == "none" ? #2a78d6 : (
-            DragState.hover-valid ? #1baf7a : #d03b3b
+        border-color: DragState.hover-target == "none" ? Theme.primary : (
+            DragState.hover-valid ? Theme.success : Theme.danger
         );
 
         HorizontalLayout {
@@ -1669,7 +1719,7 @@ export component AppWindow inherits Window {
 
             Text {
                 text: "⋮⋮";
-                color: #52514e;
+                color: Theme.text-secondary;
                 font-size: 13px;
                 vertical-alignment: center;
             }
@@ -1683,7 +1733,7 @@ export component AppWindow inherits Window {
 
             Text {
                 text: DragState.file-name;
-                color: #24303a;
+                color: Theme.text-primary;
                 font-size: 12px;
                 font-weight: 600;
                 overflow: elide;
@@ -1693,15 +1743,15 @@ export component AppWindow inherits Window {
 
             Text {
                 text: DragState.file-size-formatted;
-                color: #68747b;
+                color: Theme.text-muted;
                 font-size: 11px;
                 vertical-alignment: center;
             }
 
             Rectangle {
                 border-radius: 4px;
-                background: DragState.hover-target == "none" ? #e1e0d9 : (
-                    DragState.hover-valid ? #1baf7a : #d03b3b
+                background: DragState.hover-target == "none" ? Theme.border-light : (
+                    DragState.hover-valid ? Theme.success : Theme.danger
                 );
 
                 HorizontalLayout {
@@ -1712,7 +1762,7 @@ export component AppWindow inherits Window {
                         text: DragState.hover-target == "none" ? "Dragging" : (
                             DragState.hover-valid ? "Drop target" : "Invalid"
                         );
-                        color: DragState.hover-target == "none" ? #52514e : #ffffff;
+                        color: DragState.hover-target == "none" ? Theme.text-secondary : #ffffff;
                         font-size: 10px;
                         font-weight: 700;
                         vertical-alignment: center;

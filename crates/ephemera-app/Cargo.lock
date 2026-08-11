@@ -1358,6 +1358,7 @@ dependencies = [
  "dotenvy",
  "ephemera-core",
  "rfd",
+ "serde_json",
  "slint",
  "slint-build",
  "tokio",
