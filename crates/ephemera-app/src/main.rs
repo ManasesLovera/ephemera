@@ -379,7 +379,10 @@ fn main() -> Result<(), slint::PlatformError> {
             let weak = weak.clone();
             let id_str = id.to_string();
             rt_handle.spawn(async move {
-                if ephemera_core::delete_from_db(&shared.core, &id_str).await.is_ok() {
+                if ephemera_core::delete_from_db(&shared.core, &id_str)
+                    .await
+                    .is_ok()
+                {
                     let db_status = ephemera_core::get_db_status(&shared.core).await.ok();
                     let db_files = ephemera_core::list_db(&shared.core).await.ok();
                     let _ = slint::invoke_from_event_loop(move || {
@@ -401,7 +404,10 @@ fn main() -> Result<(), slint::PlatformError> {
             let weak = weak.clone();
             let id_str = id.to_string();
             rt_handle.spawn(async move {
-                if ephemera_core::delete_from_cloud(&shared.core, &id_str).await.is_ok() {
+                if ephemera_core::delete_from_cloud(&shared.core, &id_str)
+                    .await
+                    .is_ok()
+                {
                     let cloud_status = ephemera_core::get_cloud_status(&shared.core).await.ok();
                     let cloud_files = ephemera_core::list_cloud(&shared.core).await.ok();
                     let _ = slint::invoke_from_event_loop(move || {
