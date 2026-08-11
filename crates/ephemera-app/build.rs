@@ -5,7 +5,7 @@ fn main() {
     // any of the 5 release.yml platform targets. See `docs/10-implementation-status.md`
     // and the GAP-I18N PR for the runtime-switch API this enables
     // (`slint::select_bundled_translation`).
-    let config = slint_build::CompilerConfiguration::new()
-        .with_bundled_translations("ui/translations");
+    let config =
+        slint_build::CompilerConfiguration::new().with_bundled_translations("ui/translations");
     slint_build::compile_with_config("ui/app.slint", config).expect("failed to compile Slint UI");
 }

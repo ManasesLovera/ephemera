@@ -166,9 +166,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         language: lang.to_string(),
                     });
                 } else {
-                    window.set_error_message(
-                        format!("Unknown language: {}", lang.as_str()).into(),
-                    );
+                    window.set_error_message(format!("Unknown language: {}", lang.as_str()).into());
                 }
             }
         });
