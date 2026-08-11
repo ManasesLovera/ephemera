@@ -22,3 +22,5 @@ logs
 
 # OS
 .DS_Store
+**/target/
+/crates/ephemera-core/Cargo.lock

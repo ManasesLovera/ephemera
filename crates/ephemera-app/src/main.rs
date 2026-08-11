@@ -12,7 +12,7 @@ slint::include_modules!();
 mod model;
 
 use ephemera_core::state::AppState;
-use model::ShellState;
+use model::{describe_error, ShellState};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -79,6 +79,178 @@ fn main() -> Result<(), slint::PlatformError> {
         window.on_refresh_all(move || {
             if let Some(window) = weak.upgrade() {
                 shared.refresh_all(&window);
+            }
+        });
+    }
+
+    {
+        let weak = window.as_weak();
+        window.on_clear_error(move || {
+            if let Some(window) = weak.upgrade() {
+                window.set_error_message("".into());
+            }
+        });
+    }
+
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        let rt_handle = rt.handle().clone();
+        window.on_upload_ram_files(move || {
+            if let Some(files) = rfd::FileDialog::new().pick_files() {
+                let shared = shared.clone();
+                let weak = weak.clone();
+                rt_handle.spawn(async move {
+                    let mut last_err = None;
+                    for path in files {
+                        if let Err(e) =
+                            ephemera_core::upload_to_ram(&shared.core, &path.to_string_lossy())
+                                .await
+                        {
+                            last_err = Some(e);
+                            break;
+                        }
+                    }
+                    let _ = slint::invoke_from_event_loop(move || {
+                        if let Some(window) = weak.upgrade() {
+                            if let Some(e) = last_err {
+                                window.set_error_message(describe_error(&e).into());
+                            } else {
+                                window.set_error_message("".into());
+                            }
+                            shared.refresh_ram(&window);
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        window.on_stream_upload_to_disk(move || {
+            if let Some(path) = rfd::FileDialog::new().pick_file() {
+                if let Some(window) = weak.upgrade() {
+                    window.set_error_message("".into());
+                    let res = ephemera_core::stream_upload_to_disk(
+                        &shared.core,
+                        &path.to_string_lossy(),
+                        |_| {},
+                    );
+                    match res {
+                        Ok(_report) => {
+                            shared.refresh_disk(&window);
+                        }
+                        Err(e) => {
+                            window.set_error_message(describe_error(&e).into());
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        window.on_flush_ram(move || {
+            if let Some(window) = weak.upgrade() {
+                window.set_error_message("".into());
+                ephemera_core::flush_ram(&shared.core);
+                shared.refresh_ram(&window);
+            }
+        });
+    }
+
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        window.on_persist_to_disk(move |id| {
+            if let Some(window) = weak.upgrade() {
+                window.set_error_message("".into());
+                match ephemera_core::persist_to_disk(&shared.core, id.as_str()) {
+                    Ok(_) => {
+                        shared.refresh_ram(&window);
+                        shared.refresh_disk(&window);
+                    }
+                    Err(e) => {
+                        window.set_error_message(describe_error(&e).into());
+                    }
+                }
+            }
+        });
+    }
+
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        let rt_handle = rt.handle().clone();
+        window.on_save_to_db(move |id| {
+            let shared = shared.clone();
+            let weak = weak.clone();
+            let id = id.to_string();
+            rt_handle.spawn(async move {
+                let res = ephemera_core::save_to_db(&shared.core, &id, "ram").await;
+                let db_status = ephemera_core::get_db_status(&shared.core).await.ok();
+                let db_files = ephemera_core::list_db(&shared.core).await.ok();
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(window) = weak.upgrade() {
+                        match res {
+                            Ok(_) => {
+                                shared.refresh_ram(&window);
+                                shared.apply_db(&window, db_status, db_files);
+                            }
+                            Err(e) => {
+                                window.set_error_message(describe_error(&e).into());
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        let rt_handle = rt.handle().clone();
+        window.on_save_to_cloud(move |id| {
+            let shared = shared.clone();
+            let weak = weak.clone();
+            let id = id.to_string();
+            rt_handle.spawn(async move {
+                let res = ephemera_core::save_to_cloud(&shared.core, &id, "ram").await;
+                let cloud_status = ephemera_core::get_cloud_status(&shared.core).await.ok();
+                let cloud_files = ephemera_core::list_cloud(&shared.core).await.ok();
+                let _ = slint::invoke_from_event_loop(move || {
+                    if let Some(window) = weak.upgrade() {
+                        match res {
+                            Ok(_) => {
+                                shared.refresh_ram(&window);
+                                shared.apply_cloud(&window, cloud_status, cloud_files);
+                            }
+                            Err(e) => {
+                                window.set_error_message(describe_error(&e).into());
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    }
+
+    {
+        let shared = shared.clone();
+        let weak = window.as_weak();
+        window.on_delete_from_ram(move |id| {
+            if let Some(window) = weak.upgrade() {
+                window.set_error_message("".into());
+                if let Err(e) = ephemera_core::delete_from_ram(&shared.core, id.as_str()) {
+                    window.set_error_message(describe_error(&e).into());
+                } else {
+                    shared.refresh_ram(&window);
+                }
             }
         });
     }

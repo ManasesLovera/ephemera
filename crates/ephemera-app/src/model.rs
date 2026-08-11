@@ -18,13 +18,49 @@
 
 use ephemera_core::types as core_types;
 use slint::{ModelRc, VecModel};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
 
 use crate::{
     AppWindow, CloudFile as UiCloudFile, CloudStatus as UiCloudStatus, DbFile as UiDbFile,
     DbStatus as UiDbStatus, DiskFile as UiDiskFile, FileMeta as UiFileMeta, Metrics as UiMetrics,
 };
+
+/// Categorical slot colors matching App.css (--s1..--s8 and --other).
+const COLOR_SLOTS: &[slint::Color] = &[
+    slint::Color::from_rgb_u8(0x2a, 0x78, 0xd6), // s1
+    slint::Color::from_rgb_u8(0xeb, 0x68, 0x34), // s2
+    slint::Color::from_rgb_u8(0x1b, 0xaf, 0x7a), // s3
+    slint::Color::from_rgb_u8(0xed, 0xa1, 0x00), // s4
+    slint::Color::from_rgb_u8(0xe8, 0x7b, 0xa4), // s5
+    slint::Color::from_rgb_u8(0x00, 0x83, 0x00), // s6
+    slint::Color::from_rgb_u8(0x4a, 0x3a, 0xa7), // s7
+    slint::Color::from_rgb_u8(0xe3, 0x49, 0x48), // s8
+];
+const OTHER_COLOR: slint::Color = slint::Color::from_rgb_u8(0xb7, 0xb6, 0xae);
+
+#[derive(Default)]
+pub struct ColorAssigner {
+    assigned: HashMap<String, slint::Color>,
+    next_slot: usize,
+}
+
+impl ColorAssigner {
+    pub fn color_for(&mut self, id: &str) -> slint::Color {
+        if let Some(&c) = self.assigned.get(id) {
+            return c;
+        }
+        let c = if self.next_slot < COLOR_SLOTS.len() {
+            let color = COLOR_SLOTS[self.next_slot];
+            self.next_slot += 1;
+            color
+        } else {
+            OTHER_COLOR
+        };
+        self.assigned.insert(id.to_string(), c);
+        c
+    }
+}
 
 /// 60 s of samples at 4 Hz — matches `HISTORY_LIMIT` in `useAppStore.ts`.
 pub const HISTORY_LIMIT: usize = 240;
@@ -50,6 +86,7 @@ pub struct ShellState {
     /// database / cloud infrastructure) — never in this struct.
     pub core: Arc<ephemera_core::state::AppState>,
     pub vault_path: String,
+    color_assigner: Mutex<ColorAssigner>,
     ram_files: Mutex<Vec<core_types::FileMeta>>,
     disk_files: Mutex<Vec<core_types::DiskFile>>,
     db_files: Mutex<Vec<core_types::DbFile>>,
@@ -65,6 +102,7 @@ impl ShellState {
         Arc::new(Self {
             core,
             vault_path,
+            color_assigner: Mutex::new(ColorAssigner::default()),
             ram_files: Mutex::new(Vec::new()),
             disk_files: Mutex::new(Vec::new()),
             db_files: Mutex::new(Vec::new()),
@@ -84,7 +122,8 @@ impl ShellState {
         if let Ok(mut slot) = self.ram_files.lock() {
             *slot = files.clone();
         }
-        window.set_ram_files(meta_model(files.iter().map(ui_file_meta).collect()));
+        let mut assigner = self.color_assigner.lock().unwrap();
+        window.set_ram_files(meta_model(files.iter().map(|f| ui_file_meta(f, &mut assigner)).collect()));
         self.sync_file_counts(window);
     }
 
@@ -94,7 +133,8 @@ impl ShellState {
         if let Ok(mut slot) = self.disk_files.lock() {
             *slot = files.clone();
         }
-        window.set_disk_files(disk_model(files.iter().map(ui_disk_file).collect()));
+        let mut assigner = self.color_assigner.lock().unwrap();
+        window.set_disk_files(disk_model(files.iter().map(|f| ui_disk_file(f, &mut assigner)).collect()));
         self.sync_file_counts(window);
     }
 
@@ -155,10 +195,11 @@ impl ShellState {
             .map(|s| s.cap)
             .unwrap_or(core_types::MAX_DB_BYTES);
 
+        let mut assigner = self.color_assigner.lock().unwrap();
         window.set_db_status(status.as_ref().map(ui_db_status).unwrap_or_default());
-        window.set_db_files(db_model(files.iter().map(ui_db_file).collect()));
+        window.set_db_files(db_model(files.iter().map(|f| ui_db_file(f, &mut assigner)).collect()));
         window.set_db_meta_files(meta_model(
-            files.iter().map(|f| ui_file_meta(&f.meta)).collect(),
+            files.iter().map(|f| ui_file_meta(&f.meta, &mut assigner)).collect(),
         ));
         window.set_db_used_text(
             (if connected {
@@ -230,10 +271,11 @@ impl ShellState {
             .map(|s| s.cap)
             .unwrap_or(core_types::MAX_CLOUD_BYTES);
 
+        let mut assigner = self.color_assigner.lock().unwrap();
         window.set_cloud_status(status.as_ref().map(ui_cloud_status).unwrap_or_default());
-        window.set_cloud_files(cloud_model(files.iter().map(ui_cloud_file).collect()));
+        window.set_cloud_files(cloud_model(files.iter().map(|f| ui_cloud_file(f, &mut assigner)).collect()));
         window.set_cloud_meta_files(meta_model(
-            files.iter().map(|f| ui_file_meta(&f.meta)).collect(),
+            files.iter().map(|f| ui_file_meta(&f.meta, &mut assigner)).collect(),
         ));
         window.set_cloud_used_text(
             (if connected {
@@ -309,7 +351,28 @@ impl ShellState {
 
 // ---- projection: core types → Slint structs (metadata only) ----------------
 
-fn ui_file_meta(m: &core_types::FileMeta) -> UiFileMeta {
+pub fn describe_error(err: &ephemera_core::error::AppError) -> String {
+    match err {
+        ephemera_core::error::AppError::QuotaExceeded { needed, free, cap } => {
+            format!(
+                "Quota exceeded — need {} KB more, {} KB free of {} MB.",
+                (needed + 1023) / 1024,
+                (free + 1023) / 1024,
+                cap / 1024 / 1024
+            )
+        }
+        ephemera_core::error::AppError::FileTooLarge { size, cap } => {
+            format!(
+                "File too large: {} MB, cap is {} MB. Try \"Stream to disk\" instead.",
+                (size + 1024 * 1024 - 1) / 1024 / 1024,
+                cap / 1024 / 1024
+            )
+        }
+        _ => err.to_string(),
+    }
+}
+
+fn ui_file_meta(m: &core_types::FileMeta, assigner: &mut ColorAssigner) -> UiFileMeta {
     UiFileMeta {
         id: m.id.clone().into(),
         name: m.name.clone().into(),
@@ -317,26 +380,28 @@ fn ui_file_meta(m: &core_types::FileMeta) -> UiFileMeta {
         mime: m.mime.clone().into(),
         created_at: format_ts(m.created_at).into(),
         origin: origin_str(&m.origin).into(),
+        color: assigner.color_for(&m.id),
+        size_formatted: format_bytes(m.size).into(),
     }
 }
 
-fn ui_disk_file(f: &core_types::DiskFile) -> UiDiskFile {
+fn ui_disk_file(f: &core_types::DiskFile, assigner: &mut ColorAssigner) -> UiDiskFile {
     UiDiskFile {
-        meta: ui_file_meta(&f.meta),
+        meta: ui_file_meta(&f.meta, assigner),
         persisted_at: format_ts(f.persisted_at).into(),
     }
 }
 
-fn ui_db_file(f: &core_types::DbFile) -> UiDbFile {
+fn ui_db_file(f: &core_types::DbFile, assigner: &mut ColorAssigner) -> UiDbFile {
     UiDbFile {
-        meta: ui_file_meta(&f.meta),
+        meta: ui_file_meta(&f.meta, assigner),
         saved_at: format_ts(f.saved_at).into(),
     }
 }
 
-fn ui_cloud_file(f: &core_types::CloudFile) -> UiCloudFile {
+fn ui_cloud_file(f: &core_types::CloudFile, assigner: &mut ColorAssigner) -> UiCloudFile {
     UiCloudFile {
-        meta: ui_file_meta(&f.meta),
+        meta: ui_file_meta(&f.meta, assigner),
         saved_at: format_ts(f.saved_at).into(),
         object_name: f.object_name.clone().into(),
     }
@@ -463,12 +528,14 @@ mod tests {
 
     #[test]
     fn file_meta_projection_carries_every_field_and_no_bytes() {
-        let ui = ui_file_meta(&meta("abc"));
+        let mut assigner = ColorAssigner::default();
+        let ui = ui_file_meta(&meta("abc"), &mut assigner);
         assert_eq!(ui.id, "abc");
         assert_eq!(ui.name, "photo.jpg");
         assert_eq!(ui.size, 2_200_000);
         assert_eq!(ui.mime, "image/jpeg");
         assert_eq!(ui.origin, "upload");
+        assert_eq!(ui.size_formatted, "2.1 MB");
         // created_at is rendered, not dropped.
         assert!(!ui.created_at.is_empty());
     }
