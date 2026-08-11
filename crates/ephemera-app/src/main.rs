@@ -162,6 +162,10 @@ fn main() -> Result<(), slint::PlatformError> {
 
     let shared = ShellState::new(core, vault_path.to_string_lossy().to_string());
 
+    window
+        .global::<Theme>()
+        .set_dark_mode(saved_settings.dark_mode);
+
     // Initial synchronous refresh (RAM/disk/vault are in-process and cheap), plus
     // the seeded db/cloud snapshots.
     shared.refresh_ram(&window);
@@ -169,6 +173,23 @@ fn main() -> Result<(), slint::PlatformError> {
     shared.push_vault_path(&window);
     shared.apply_db(&window, db_status, db_files);
     shared.apply_cloud(&window, cloud_status, cloud_files);
+
+    // Toggle dark mode and persist preference to settings.json.
+    {
+        let weak = window.as_weak();
+        let language = saved_settings.language.clone();
+        window.on_toggle_dark_mode(move || {
+            if let Some(window) = weak.upgrade() {
+                let theme = window.global::<Theme>();
+                let new_mode = !theme.get_dark_mode();
+                theme.set_dark_mode(new_mode);
+                settings::save(&settings::Settings {
+                    language: language.clone(),
+                    dark_mode: new_mode,
+                });
+            }
+        });
+    }
 
     // Slint → Rust callback. The old React `refreshAll` zustand action crossed
     // IPC; this is a plain Rust closure running in the same process.
@@ -201,8 +222,10 @@ fn main() -> Result<(), slint::PlatformError> {
             if let Some(window) = weak.upgrade() {
                 if slint::select_bundled_translation(lang.as_str()).is_ok() {
                     window.set_current_language(lang.clone());
+                    let dark_mode = window.global::<Theme>().get_dark_mode();
                     settings::save(&settings::Settings {
                         language: lang.to_string(),
+                        dark_mode,
                     });
                 } else {
                     window.set_error_message(format!("Unknown language: {}", lang.as_str()).into());

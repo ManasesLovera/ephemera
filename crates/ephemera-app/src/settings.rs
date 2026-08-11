@@ -1,13 +1,11 @@
 //! Small persisted-settings file for shell-level UI preferences.
 //!
-//! As of this writing (GAP-I18N) neither GAP-DARK-MODE nor GAP-VAULT-PERSIST has
-//! landed on `main` — there is no existing persisted-config plumbing to reuse, so
-//! this introduces a minimal, extensible `settings.json` that those gaps can add
-//! keys to later rather than each growing its own separate file. Unknown keys are
-//! preserved on write is out of scope for now (only `language` exists); if a
-//! second key shows up, switch this to a `serde_json::Value` merge instead of a
-//! flat struct so a newer binary doesn't clobber keys an older one didn't know
-//! about.
+//! Introduced by GAP-I18N as a minimal, extensible `settings.json` that later
+//! gaps can add keys to rather than each growing its own separate file
+//! (GAP-DARK-MODE's `dark_mode` is the first of those). Unknown keys are
+//! preserved on write is out of scope for now; if a third key shows up,
+//! switch this to a `serde_json::Value` merge instead of a flat struct so a
+//! newer binary doesn't clobber keys an older one didn't know about.
 
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -16,12 +14,15 @@ use std::path::PathBuf;
 pub struct Settings {
     #[serde(default = "default_language")]
     pub language: String,
+    #[serde(default)]
+    pub dark_mode: bool,
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Settings {
             language: default_language(),
+            dark_mode: false,
         }
     }
 }
