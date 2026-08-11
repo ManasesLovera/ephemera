@@ -5,7 +5,8 @@ logs
 # Rust / Tauri
 /src-tauri/target/
 /spike-slint/target/
-/crates/ephemera-app/target/
+/crates/*/target/
+/crates/*/Cargo.lock
 /src-tauri/gen/
 
 # Node
