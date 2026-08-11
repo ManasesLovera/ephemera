@@ -116,7 +116,9 @@ fn main() -> Result<(), slint::PlatformError> {
     let app_config_path = config_dir.join("ephemera-config.json");
     let initial_dark_mode = if let Ok(content) = std::fs::read_to_string(&app_config_path) {
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            json.get("dark_mode").and_then(|v| v.as_bool()).unwrap_or(false)
+            json.get("dark_mode")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false)
         } else {
             false
         }
