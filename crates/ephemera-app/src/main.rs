@@ -13,7 +13,7 @@ mod model;
 
 use ephemera_core::state::AppState;
 use model::{describe_error, ShellState};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -29,7 +29,48 @@ fn default_vault_path() -> PathBuf {
     base.join("com.ephemera.app").join("vault")
 }
 
+/// Walks upward from `start`, returning the first ancestor directory containing
+/// `filename`. Carried over from the Tauri build (`src-tauri/src/lib.rs`, commit
+/// `0e2fc7a`): anchoring on the executable's own location, rather than the
+/// process's current working directory, means `.env` and `gcs-key.json` resolve
+/// the same way whether launched via `cargo run` (exe under `target/debug`) or as
+/// a standalone release binary run from anywhere.
+fn find_upwards(start: &Path, filename: &str) -> Option<PathBuf> {
+    let mut dir = Some(start);
+    while let Some(d) = dir {
+        let candidate = d.join(filename);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+        dir = d.parent();
+    }
+    None
+}
+
 fn main() -> Result<(), slint::PlatformError> {
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(Path::to_path_buf));
+    let env_path = exe_dir.as_deref().and_then(|d| find_upwards(d, ".env"));
+    match &env_path {
+        Some(path) => {
+            let _ = dotenvy::from_path(path);
+        }
+        None => {
+            let _ = dotenvy::dotenv();
+        }
+    }
+    // GCS_KEY_PATH (whether from .env or its default) is conventionally a bare
+    // filename meant to sit next to .env — resolve it against that directory
+    // rather than the process's current working directory, which varies by
+    // launch method (`cargo run` vs. a standalone release binary run from
+    // anywhere).
+    let config_dir = env_path
+        .as_ref()
+        .and_then(|p| p.parent().map(Path::to_path_buf))
+        .or(exe_dir)
+        .unwrap_or_else(|| PathBuf::from("."));
+
     // A multi-threaded tokio runtime so the core's async DB/cloud stores (and the
     // slow 3 s usage refresher) keep progressing while the Slint event loop runs
     // on the main thread.
@@ -44,6 +85,14 @@ fn main() -> Result<(), slint::PlatformError> {
 
         let gcs_key_path =
             std::env::var("GCS_KEY_PATH").unwrap_or_else(|_| "gcs-key.json".to_string());
+        let gcs_key_path = if Path::new(&gcs_key_path).is_absolute() {
+            gcs_key_path
+        } else {
+            config_dir
+                .join(&gcs_key_path)
+                .to_string_lossy()
+                .into_owned()
+        };
         let gcs_bucket =
             std::env::var("GCS_BUCKET").unwrap_or_else(|_| "ephemera-vault".to_string());
         let cloud = ephemera_core::cloud_store::CloudStore::load(&gcs_key_path, gcs_bucket);

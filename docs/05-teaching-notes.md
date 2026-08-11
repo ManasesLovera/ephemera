@@ -139,9 +139,14 @@ honest — see [`02-architecture.md`](02-architecture.md).
 
 ### Copies across a boundary
 
-Moving 10 MB from the webview into Rust can transiently cost 20–30 MB depending on the
-IPC path. The architecture chooses the path-based route partly to avoid this — but the
-fact that a naive implementation would triple the memory cost is itself worth telling.
+This was a live concern under the original Tauri architecture: moving 10 MB from the
+webview into Rust could transiently cost 20–30 MB depending on the IPC serialization
+path, which is why that design chose path-based file reading (Rust reads the file
+itself) over sending bytes across IPC. Since the Slint migration there's no
+process/serialization boundary at all — the UI and core share one address space — so
+this specific failure mode is now structurally impossible rather than just avoided by
+convention. Still worth telling: the fact that a naive cross-boundary implementation
+would have tripled the memory cost is a real lesson about what "no IPC" actually buys.
 
 ### This is not a RAM disk
 

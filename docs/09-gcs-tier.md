@@ -30,7 +30,7 @@ service account for the *app* to use (distinct from your personal login).
 ## Why a service account, not your personal ADC
 
 Your personal ADC is tied to your Google account and has whatever access it has —
-usually broad. The Tauri app should authenticate as its own identity with the minimum
+usually broad. The app should authenticate as its own identity with the minimum
 permission it needs: read/write objects in exactly one bucket, nothing else in the
 project. That is a **service account** scoped to that bucket only, with a downloaded
 JSON key the app loads explicitly, kept out of the docs and out of git.
@@ -87,7 +87,7 @@ bucket in the project. This is the scoping that matters.
 ### 5. Create and download a key
 
 ```bash
-gcloud iam service-accounts keys create ~/dev/ephemera/src-tauri/gcs-key.json \
+gcloud iam service-accounts keys create ~/dev/ephemera/crates/ephemera-app/gcs-key.json \
   --iam-account=ephemera-app@alterna-489722.iam.gserviceaccount.com
 ```
 
@@ -100,7 +100,7 @@ gcloud iam service-accounts keys create ~/dev/ephemera/src-tauri/gcs-key.json \
 
 ```bash
 gcloud storage ls gs://ephemera-vault-alterna --project=alterna-489722
-GOOGLE_APPLICATION_CREDENTIALS=~/dev/ephemera/src-tauri/gcs-key.json \
+GOOGLE_APPLICATION_CREDENTIALS=~/dev/ephemera/crates/ephemera-app/gcs-key.json \
   gcloud storage cp <(echo test) gs://ephemera-vault-alterna/smoke-test.txt
 gcloud storage rm gs://ephemera-vault-alterna/smoke-test.txt
 ```
@@ -109,8 +109,8 @@ gcloud storage rm gs://ephemera-vault-alterna/smoke-test.txt
 
 ```gitignore
 # GCS credentials — never commit
-src-tauri/gcs-key.json
-src-tauri/.env
+crates/ephemera-app/gcs-key.json
+crates/ephemera-app/.env
 ```
 
 ## What I have not yet done
@@ -126,7 +126,7 @@ tier (5 GB-months storage, 5,000 Class A ops/month); expected cost is effectivel
 | Crate | Purpose |
 | --- | --- |
 | `google-cloud-storage` | Async GCS client from the `google-cloud-rust` workspace; reads a service-account JSON key or ADC directly, no hand-rolled OAuth |
-| `tokio` | Already present via Tauri |
+| `tokio` | Already present as the core's async runtime |
 
 ```rust
 use google_cloud_storage::client::{Client, ClientConfig};
@@ -169,11 +169,14 @@ impl CloudStore {
 Getting a usable object listing/size for the meter uses `client.list_objects` summed
 client-side, or `bucket.get()` for aggregate metadata if the crate exposes it.
 
-## IPC additions
+## Core API additions
 
-| Command | Args | Returns | Notes |
+Plain functions in `crates/ephemera-core`, called directly (no IPC boundary — see
+[`02-architecture.md`](02-architecture.md)):
+
+| Function | Args | Returns | Notes |
 | --- | --- | --- | --- |
-| `save_to_cloud` | `id`, source (`ram` \| `disk`), `Channel` | `CloudFile` | Streams; reports upload throughput over the network, not disk — a new, slower comparison point |
+| `save_to_cloud` | `id`, source (`ram` \| `disk`) | `CloudFile` | Streams; reports upload throughput over the network, not disk — a new, slower comparison point |
 | `list_cloud` | — | `Vec<CloudFile>` | |
 | `delete_from_cloud` | `id` | `()` | |
 | `get_cloud_status` | — | `CloudStatus { connected, bytes_used, object_count }` | Drives an offline/misconfigured banner, same pattern as the DB tier |

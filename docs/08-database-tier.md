@@ -22,7 +22,7 @@ group (verified 2026-08-04) — no setup needed beyond the compose file below.
 
 ## docker-compose.yml
 
-Place at the project root, alongside `src-tauri/`:
+Place at the project root, alongside `crates/`:
 
 ```yaml
 services:
@@ -135,16 +135,19 @@ impl DbStore {
 ```
 
 `DATABASE_URL` for local dev: `postgres://ephemera:ephemera_dev_only@localhost:5432/ephemera`.
-Store it in `src-tauri/.env` (gitignored) and read via `dotenvy` at startup, falling back
+Store it in `crates/ephemera-app/.env` (gitignored) and read via `dotenvy` at startup, falling back
 to an in-app "Database offline — start it with `docker compose up`" state if the connect
 fails, rather than crashing. The database is optional infrastructure; the app's core
 lesson (RAM vs. disk) must work with it stopped.
 
-## IPC additions
+## Core API additions
 
-| Command | Args | Returns | Notes |
+Plain functions in `crates/ephemera-core`, called directly (no IPC boundary — see
+[`02-architecture.md`](02-architecture.md)):
+
+| Function | Args | Returns | Notes |
 | --- | --- | --- | --- |
-| `save_to_db` | `id`, source (`ram` \| `disk`), `Channel` | `DbFile` | Enforces 100 MB logical cap |
+| `save_to_db` | `id`, source (`ram` \| `disk`) | `DbFile` | Enforces 100 MB logical cap |
 | `list_db` | — | `Vec<DbFile>` | |
 | `delete_from_db` | `id` | `()` | |
 | `get_db_status` | — | `DbStatus { connected, logical_bytes, physical_bytes, cap }` | Polled or events; also drives the "offline" banner |

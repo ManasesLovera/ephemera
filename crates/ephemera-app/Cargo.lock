@@ -1355,6 +1355,7 @@ name = "ephemera-app"
 version = "0.2.2"
 dependencies = [
  "chrono",
+ "dotenvy",
  "ephemera-core",
  "rfd",
  "slint",

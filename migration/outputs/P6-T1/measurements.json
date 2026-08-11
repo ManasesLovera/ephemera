@@ -1,0 +1,42 @@
+{
+  "date": "2026-08-11",
+  "methodology": "P0-T2 spike applied to full merged Slint app",
+  "slint": {
+    "binary": "crates/ephemera-app/target/release/ephemera-app",
+    "idle_main_rss_kb": 126084,
+    "idle_tree_rss_bytes": 129110016,
+    "process_count": 1
+  },
+  "tauri": {
+    "binary": "/tmp/opencode/tauri-pre/src-tauri/target/release/ephemera",
+    "idle_main_rss_kb": 179544,
+    "idle_tree_rss_bytes": 411709440,
+    "process_count": 3,
+    "children": [
+      {"pid": 3974786, "name": "WebKitNetworkProcess", "vmrss_kb": 57508},
+      {"pid": 3974801, "name": "WebKitWebProcess", "vmrss_kb": 165008}
+    ]
+  },
+  "core_workload": {
+    "harness_binary": "migration/outputs/P6-T1/measure/target/release/p6t1-measure",
+    "test_size_bytes": 10485760,
+    "baseline_kb": 6620,
+    "after_init_kb": 14184,
+    "after_ram_kb": 34660,
+    "after_disk_kb": 34660,
+    "after_db_kb": 55316,
+    "after_flush_kb": 55316,
+    "ram_delta_kb": 20476,
+    "disk_delta_kb": 20476,
+    "db_delta_kb": 41132
+  },
+  "comparison": {
+    "idle_tree_diff_kb": 275851,
+    "idle_main_diff_kb": 53460,
+    "slint_vs_tauri_tree_ratio": 0.313,
+    "projected_slint_after_ram_kb": 146560,
+    "projected_tauri_tree_after_ram_kb": 422411,
+    "projected_slint_after_db_kb": 167216,
+    "projected_tauri_tree_after_db_kb": 443067
+  }
+}

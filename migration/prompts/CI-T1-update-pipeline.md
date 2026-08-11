@@ -3,11 +3,14 @@ migration branches should already be merged into `main` (this task depends on th
 Phase 6 compliance review, which only runs against a merged main).
 
 Read `.github/workflows/ci.yml` and `.github/workflows/release.yml` in full before
-changing anything. Update `ci.yml` to build and test the Slint app instead of (or,
-if you judge it safer to keep both temporarily, alongside) the old Tauri/pnpm/vite
-steps — check `Cargo.toml`/`Cargo.lock` at the repo root for what the Slint app
-actually needs (likely just `cargo check`/`cargo test`/`cargo build --release`, no
-Node/pnpm steps unless something in the repo still needs them).
+changing anything. The migration is complete and the old `src/` (React) and
+`src-tauri/` (Tauri) directories are being removed in the very next task — update
+`ci.yml` to build and test **only** the Slint app (`crates/ephemera-app` +
+`crates/ephemera-core`), dropping the Tauri/pnpm/vite steps entirely rather than
+keeping both. Check `Cargo.toml`/`Cargo.lock` at the repo root for what the Slint
+app actually needs (likely `cargo check`/`cargo test`/`cargo build --release`
+plus whatever system libs Slint's winit backend needs on Linux CI runners — check
+`docs/04-tech-stack.md`'s verified prereqs list). No Node/pnpm steps should remain.
 
 Update `release.yml` only if it references Tauri-specific bundling steps
 (`tauri-cli`, `tauri build`, AppImage/deb/msi bundle outputs) that no longer apply

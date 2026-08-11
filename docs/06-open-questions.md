@@ -9,14 +9,13 @@ Recorded so they are not reopened by accident.
 
 | Question | Decision |
 | --- | --- |
-| Frontend framework | React + TypeScript |
-| Desktop shell | Tauri 2 (Rust) |
+| UI toolkit | **Slint** (native Rust UI), migrated from an original Tauri 2 + React shell — see `migration/PLAN.md` |
 | Project name | **Ephemera** |
 | RAM cap | 10 MB |
 | Disk cap | 20 MB, deliberately 2× RAM |
 | Pane layout | Two panes, side by side |
-| Where the RAM store lives | Rust process heap, not the webview |
-| Does a webview reload clear RAM? | **No** — state is in Rust; this is a deliberate demo |
+| Where the RAM store lives | Rust process heap; the UI holds metadata only |
+| Does a UI reload clear RAM? | **No** — state is in Rust, owned independently of the UI layer; this is a deliberate demo |
 
 ## Open — needs a decision
 
@@ -85,29 +84,28 @@ starts empty on every launch, which is itself on-message.
 
 ### 9. Packaging and distribution
 
-Is this run from `pnpm tauri dev`, or does it need a real `.deb` / AppImage for others
-to install?
-
-**Recommendation:** dev-mode only until the app works, then produce an AppImage if it is
-going to be handed to students. Note that `.deb` on Ubuntu 26.04 built against
-webkit2gtk-4.1 will not install on older distros — AppImage is safer for sharing.
+**Resolved:** the app ships as a single native Slint binary per platform (no installer,
+no bundle) — see [`DOWNLOAD.md`](../DOWNLOAD.md) and `release.yml`. This sidesteps the
+original webkit2gtk-version-compatibility concern entirely, since there's no bundled
+web runtime to version-match against the target distro.
 
 ## Risks to watch
 
 | Risk | Mitigation |
 | --- | --- |
-| Tauri drag-drop suppressing HTML5 DnD | Documented in [`02-architecture.md`](02-architecture.md); use Tauri events for OS drops, dnd-kit for in-app |
-| Tauri 2 raw-IPC API details having drifted | Path-based file reading avoids the boundary entirely; treat raw IPC as fallback |
-| `sysinfo` missing WebKit child processes | Walk the process tree; verify the number against `htop` early |
-| 4 Hz metrics causing re-render storms | Zustand selectors; profile once the dashboard exists |
-| Blank window under Wayland | `WEBKIT_DISABLE_DMABUF_RENDERER=1` — see [`04-tech-stack.md`](04-tech-stack.md) |
+| Slint's `DataTransfer` has no file-path support | Confirmed a real limitation, not worked around — see `docs/02-architecture.md`; click-to-browse is the working equivalent |
+| Slint's `Path` element rejects `for` loops (no dynamic line charts) | Bar-style `Rectangle` sparklines instead — see `docs/02-architecture.md` |
+| `sysinfo` missing child processes | Walk the process tree; verified against the real measured numbers in `migration/outputs/P6-T1/REPORT.md` |
+| 4 Hz metrics causing unnecessary heap churn | A naive per-tick model rebuild was a real bug caught in migration review (Phase 4) — fixed via a persistent, in-place-mutated `VecModel` |
 | Scope creep into a real file manager | The non-goals in [`00-vision.md`](00-vision.md) are the guardrail |
 
 ## Suggested build order
 
-Each stage should be independently runnable and demonstrable.
+Each stage should be independently runnable and demonstrable. (Historical — this was
+the order for the original Tauri build; the Slint migration instead followed
+`migration/PLAN.md`'s phase order.)
 
-1. Scaffold Tauri + React + Tailwind; confirm the window opens under Wayland.
+1. Scaffold the UI shell; confirm the window opens under Wayland.
 2. Rust `RamStore` with quota enforcement; upload via the file picker only; plain list UI.
    **Milestone: the core lesson works** — files vanish on restart.
 3. Vault config, `persist_to_disk` with `fsync`, disk list, disk quota.

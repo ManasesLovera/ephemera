@@ -54,18 +54,17 @@ themselves stay comparably sized for layout sanity; only the meter *tracks* scal
 
 These are separate systems and conflating them is the main integration risk.
 
-| Gesture | Mechanism | Library |
+| Gesture | Mechanism | Status on Slint |
 | --- | --- | --- |
-| OS file → RAM pane | Tauri `tauri://drag-enter` / `drag-over` / `drag-drop` events (delivers **paths**) | none — Tauri events |
-| RAM card → disk pane | pointer-based in-app drag | **dnd-kit** |
-| Disk card → RAM pane | pointer-based in-app drag | **dnd-kit** |
-| Click to browse | native dialog | `tauri-plugin-dialog` |
+| OS file → RAM pane | would need Slint's `DropArea` to carry file paths | **not implemented** — Slint 1.17's `DataTransfer` has no file-path support at all (images/text/same-process payloads only); see `docs/02-architecture.md`. Click-to-browse is the working equivalent |
+| RAM card → disk pane | pointer-based in-app drag | implemented, via Slint's `DragArea`/`DropArea` |
+| Disk card → RAM pane | pointer-based in-app drag | implemented, via Slint's `DragArea`/`DropArea` |
+| Click to browse | native dialog | implemented, via `rfd` |
 
-See the drag-drop gotcha in [`02-architecture.md`](02-architecture.md): Tauri's native
-drop handling suppresses HTML5 `drop` events, so `react-dropzone` will silently do
-nothing while `dragDropEnabled` is `true`. We keep it enabled and drive drop-zone hover
-styling from the Tauri events instead. dnd-kit is unaffected — it listens to pointer
-events, not HTML5 DnD.
+See [`02-architecture.md`](02-architecture.md#getting-file-bytes-into-the-store) for
+the full reasoning on why OS-level file drop isn't achievable on this Slint version,
+and why the dropzone copy was changed to stop claiming it works (a real finding from
+the migration's Phase 6 compliance review).
 
 Drag affordances worth building:
 

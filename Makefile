@@ -1,12 +1,12 @@
 .PHONY: dev build run release
 
 dev:
-	pnpm tauri dev
+	cargo run --manifest-path crates/ephemera-app/Cargo.toml
 
 build:
-	pnpm tauri build
+	cargo build --release --manifest-path crates/ephemera-app/Cargo.toml
 
 run:
-	./src-tauri/target/release/ephemera
+	./crates/ephemera-app/target/release/ephemera-app
 
 release: build run

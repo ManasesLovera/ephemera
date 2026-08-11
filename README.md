@@ -4,8 +4,11 @@
 > — by making you feel it. Files you upload live *only* in RAM until you deliberately
 > carry them somewhere durable.
 
-**Status:** working app. RAM, disk, database (Postgres), and cloud (GCS) tiers are all
-implemented and tested; CI is green. Full design spec lives in [`docs/`](docs/).
+**Status:** working app, natively rendered with [Slint](https://slint.dev) (migrated
+from an earlier Tauri + React shell — same `ephemera-core` logic, no WebKitGTK). RAM,
+disk, database (Postgres), and cloud (GCS) tiers are all implemented and tested; CI is
+green. Full design spec lives in [`docs/`](docs/); see
+[`migration/PLAN.md`](migration/PLAN.md) for how the Tauri→Slint migration was run.
 
 **Just want to run it?** → [**DOWNLOAD.md**](DOWNLOAD.md) — prebuilt Linux x86_64
 binaries, plus build-from-source guides for Windows, macOS, and other architectures.
@@ -15,39 +18,30 @@ binaries, plus build-from-source guides for Windows, macOS, and other architectu
 ## Running it
 
 ```bash
-docker compose up -d          # postgres, for the database tier
-cd src-tauri && cp .env.example .env   # then fill in GCS_BUCKET if you have one — see docs/09-gcs-tier.md
-cd ..
-pnpm install
-pnpm tauri dev                # or: make dev
+docker compose up -d                   # postgres, for the database tier
+cp crates/ephemera-app/.env.example crates/ephemera-app/.env  # fill in GCS_BUCKET if you have one — see docs/09-gcs-tier.md
+cd crates/ephemera-app && cargo run --release   # or: make dev
 ```
 
 The RAM and disk tiers work with zero setup. The database tier needs Postgres running
 (`docker compose up -d`); the cloud tier needs a GCS service-account key at
-`src-tauri/gcs-key.json` (see [`docs/09-gcs-tier.md`](docs/09-gcs-tier.md)). Both
-degrade to an "offline" panel rather than breaking the app if unavailable.
+`crates/ephemera-app/gcs-key.json` (see [`docs/09-gcs-tier.md`](docs/09-gcs-tier.md)).
+Both degrade to an "offline" panel rather than breaking the app if unavailable.
 
-### Dev mode vs. release build
-
-Dev mode (`pnpm tauri dev` / `make dev`) starts a Vite dev server on
-`localhost:1420` and points the app's webview at it — that's why it's a single command
-and picks up frontend changes live. Running the compiled debug binary
-(`src-tauri/target/debug/ephemera`) directly, without that dev server also running,
-loads a blank page: the binary still expects `localhost:1420` and there's nothing
-there to serve it.
-
-The release build is different: the frontend is compiled to static files and baked
-into the binary, so it runs standalone with no dev server.
+There is no dev-server/release-build split anymore — Slint's UI compiles directly into
+the binary, so `cargo run` and the release build behave the same, just at different
+optimization levels.
 
 ```bash
-pnpm tauri build               # or: make build
-./src-tauri/target/release/ephemera   # or: make run
+cd crates/ephemera-app && cargo build --release
+./target/release/ephemera-app   # or: make run
 # or both in one step:
 make release
 ```
 
 ```bash
-cd src-tauri && cargo test    # 25 tests: unit + real Postgres/GCS integration
+(cd crates/ephemera-core && cargo test)
+(cd crates/ephemera-app && cargo test)   # unit + real Postgres/GCS integration
 ```
 
 ## Docs

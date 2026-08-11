@@ -2,26 +2,17 @@
 logs
 *.log
 
-# Rust / Tauri
-/src-tauri/target/
-/spike-slint/target/
-/crates/*/target/
-/crates/*/Cargo.lock
-/src-tauri/gen/
-
-# Node
-/node_modules/
-/dist/
-/dist-ssr/
-*.local
+# Rust
+**/target/
+# ephemera-core is a library — its Cargo.lock isn't meaningful to commit.
+# ephemera-app is the binary; its Cargo.lock IS committed (not ignored here).
+/crates/ephemera-core/Cargo.lock
 
 # Secrets — never commit
-/src-tauri/.env
-/src-tauri/gcs-key.json
+/crates/ephemera-app/.env
+/crates/ephemera-app/gcs-key.json
 *.pem
 *.key
 
 # OS
 .DS_Store
-**/target/
-/crates/ephemera-core/Cargo.lock

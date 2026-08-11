@@ -2,12 +2,15 @@
 
 ## Read before doing anything
 
-This is a **working app** — RAM, disk, database (Postgres), and cloud (GCS) tiers are
-all implemented and tested, CI is green. Start with
+This is a **working app**, natively rendered with [Slint](https://slint.dev) (migrated
+from an earlier Tauri + React shell — see [`migration/PLAN.md`](migration/PLAN.md) and
+[`migration/tasks.json`](migration/tasks.json) for how, and
+[`migration/outputs/P6-T1/REPORT.md`](migration/outputs/P6-T1/REPORT.md) for the
+measured RSS win). RAM, disk, database (Postgres), and cloud (GCS) tiers are all
+implemented and tested, CI is green. Start with
 [`docs/10-implementation-status.md`](docs/10-implementation-status.md) — it's the
 honest diff between the original spec and what's actually built, and lists the known
-gaps to pick up next (screenshot/visual verification is the top one). Then the rest of
-`docs/` for the full spec:
+gaps to pick up next. Then the rest of `docs/` for the full spec:
 
 1. `docs/00-vision.md` — what this is and why
 2. `docs/01-requirements.md` — MUST/SHOULD/COULD, the hard limits, the tier graph
@@ -34,9 +37,9 @@ gaps to pick up next (screenshot/visual verification is the top one). Then the r
 - **When asked to create a release:**
   1. Check the current/last tag (`git tag --sort=-v:refname | head -1`, or
      `gh release list --limit 1`) and decide the next version.
-  2. Bump the version in all three places together — `package.json`,
-     `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml` — then run `cargo check`
-     once to refresh `Cargo.lock` before committing.
+  2. Bump the version together in `crates/ephemera-app/Cargo.toml` and
+     `crates/ephemera-core/Cargo.toml` — then run `cargo check` in both crates once to
+     refresh their `Cargo.lock`s before committing.
   3. **Release notes must be a full changelog of every change since the last tag**,
      not just the latest commit — build it from `git log <last-tag>..HEAD --oneline`
      (grouped by type if there's enough to group).
@@ -50,13 +53,17 @@ gaps to pick up next (screenshot/visual verification is the top one). Then the r
 
 ## What this app is
 
-A Tauri 2 + React desktop app that teaches the storage hierarchy: RAM, disk, database,
-and cloud. Files uploaded live **only** in the Rust process heap (10 MB cap) until
-explicitly carried to disk (20 MB cap, real `fsync`), a Postgres database (100 MB cap,
-`BYTEA`, via `docker compose`), or a GCS bucket (100 MB UI cap) — one-way, never back to
-RAM. A second "stream to disk" path bypasses RAM entirely, chunk-copying with a
-completion report comparing measured peak memory against the buffered alternative. A
-live 4 Hz dashboard tracks per-tier usage and the process's actual resident memory.
+A native [Slint](https://slint.dev) desktop app (`crates/ephemera-app`, over the
+Tauri-free `crates/ephemera-core` logic crate) that teaches the storage hierarchy: RAM,
+disk, database, and cloud. Files uploaded live **only** in the Rust process heap (10 MB
+cap) until explicitly carried to disk (20 MB cap, real `fsync`), a Postgres database
+(100 MB cap, `BYTEA`, via `docker compose`), or a GCS bucket (100 MB UI cap) — one-way,
+never back to RAM. A second "stream to disk" path bypasses RAM entirely, chunk-copying
+with a completion report comparing measured peak memory against the buffered
+alternative. A live 4 Hz dashboard tracks per-tier usage and the process's actual
+resident memory. UI and core run in one process, one address space — no IPC, no
+serialization boundary (a change from the earlier Tauri build; see
+`docs/02-architecture.md`).
 
 ## Rules specific to this project
 
@@ -66,19 +73,28 @@ live 4 Hz dashboard tracks per-tier usage and the process's actual resident memo
   number as measured.
 - **Never write file bytes anywhere except the vault folder.** No temp files, no caches,
   no autosave. A stray temp file would make the app's central claim false.
-- **The frontend never holds authoritative file bytes** — metadata only. Webview memory
-  is also RAM, and caching contents there would make the usage numbers lie.
+- **The UI layer never holds authoritative file bytes** — metadata only. Even with no
+  IPC boundary forcing the separation anymore, Slint properties carry sizes/names/
+  status, never byte content — caching contents there would make the usage numbers lie.
 - **`fsync` on every disk write.** Without it, a write returns at page-cache speed and
   the app teaches the opposite of the truth.
 - **No dual-axis charts.** RAM store bytes and process RSS go in two stacked charts
   sharing an x-axis, never one plot with two y-scales. See `docs/03`.
 - Before shipping any chart, load the `dataviz` skill and run its palette validator for
   both light and dark modes.
+- **Known Slint 1.17 limitation:** its `DataTransfer`/`DropArea` API carries only
+  images, plain text, and same-process payloads — no file paths — so real OS-level
+  drag-and-drop of files from outside the window (e.g. from a file manager) cannot be
+  implemented on this Slint version. Don't silently claim it works in UI copy; the
+  click-to-browse file picker (`rfd`) is the working equivalent.
 
 ## Environment notes
 
-Verified 2026-08-04: Rust 1.97.1, Node 24.13.0, pnpm 11.2.2, webkit2gtk-4.1 2.52.3 —
-all Tauri Linux prereqs present. Only `tauri-cli` needs installing.
+Verified 2026-08-11: Rust 1.97.1, Slint 1.17.1. No Node/pnpm/webkit2gtk needed anymore
+— the Slint build only needs the Linux prereqs listed in
+[`DOWNLOAD.md`](DOWNLOAD.md#linux) (fontconfig, X11/Wayland, GL, GTK dev headers).
 
-This machine is **GNOME on Wayland with no Xorg**. If the Tauri window renders blank,
-try `WEBKIT_DISABLE_DMABUF_RENDERER=1` before assuming an app bug.
+This machine is **GNOME on Wayland with no Xorg**, confirmed working: the release
+binary launches and stays alive with no errors (no screenshot tool was available in
+this environment to also verify pixel-level layout — see
+`docs/10-implementation-status.md`).
