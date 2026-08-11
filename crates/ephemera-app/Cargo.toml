@@ -1,6 +1,6 @@
 [package]
 name = "ephemera-app"
-version = "0.2.2"
+version = "1.0.0"
 description = "Slint application shell for Ephemera — the Tauri-free replacement for the Tauri+React shell"
 authors = ["Ephemera"]
 edition = "2021"

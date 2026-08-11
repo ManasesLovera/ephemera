@@ -1352,7 +1352,7 @@ dependencies = [
 
 [[package]]
 name = "ephemera-app"
-version = "0.2.2"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "dotenvy",
@@ -1365,7 +1365,7 @@ dependencies = [
 
 [[package]]
 name = "ephemera-core"
-version = "0.2.2"
+version = "1.0.0"
 dependencies = [
  "base64",
  "chrono",
