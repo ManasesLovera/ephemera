@@ -4,11 +4,10 @@
 > — by making you feel it. Files you upload live *only* in RAM until you deliberately
 > carry them somewhere durable.
 
-**Status:** working app, natively rendered with [Slint](https://slint.dev) (migrated
-from an earlier Tauri + React shell — same `ephemera-core` logic, no WebKitGTK). RAM,
-disk, database (Postgres), and cloud (GCS) tiers are all implemented and tested; CI is
-green. Full design spec lives in [`docs/`](docs/); see
-[`migration/PLAN.md`](migration/PLAN.md) for how the Tauri→Slint migration was run.
+**Status:** working app, natively rendered with [Slint](https://slint.dev) — UI and core
+run in one process, one address space, no webview. RAM, disk, database (Postgres), and
+cloud (GCS) tiers are all implemented and tested; CI is green. Full design spec lives in
+[`docs/`](docs/).
 
 **Just want to run it?** → [**DOWNLOAD.md**](DOWNLOAD.md) — prebuilt Linux x86_64
 binaries, plus build-from-source guides for Windows, macOS, and other architectures.

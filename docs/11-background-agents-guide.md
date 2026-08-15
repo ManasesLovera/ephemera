@@ -93,6 +93,73 @@ When told to **"perform task X"**:
 When told to **"list known pending tasks"**: run `./migration/tasks.sh
 pending`, don't guess from memory — statuses change as work lands.
 
+## When told to work a task "as a background task": worktree → PR → CI
+
+This is a distinct, heavier workflow from the "perform task X" one above. Use
+it only when the user explicitly frames the request this way — phrases like
+"work this as a background task", "do this in a worktree", "open a PR for
+this" — not for an ordinary "perform task X" or "fix this" said in the main
+checkout. Assume you may currently be sitting in the repo root, not already
+inside a worktree; you're responsible for creating one.
+
+**Worktrees live outside the repo tree, always** — never under `.worktrees/`
+or any other path inside this checkout. This repo carries an untracked
+workspace-root `Cargo.toml` and `src-tauri/` left over from a separate,
+untracked test-infrastructure effort (`git status` shows them as `??`).
+Cargo's manifest search walks the filesystem, not git worktree boundaries, so
+any worktree created *inside* this tree inherits that stray root manifest and
+`cargo test` breaks for reasons that look unrelated to your change — this
+exact failure mode is documented in
+[`docs/10-implementation-status.md`](10-implementation-status.md) from when
+the migration pipeline hit it. `migration/dispatch.sh` fixed it once already
+by relocating worktrees outside the repo; do the same:
+
+```bash
+worktree=~/dev/worktrees/ephemera/<branch>
+git worktree add -b <branch> "$worktree" main   # run from the repo root
+cd "$worktree"
+```
+
+**Branch naming** follows Conventional Commits types, same as this project's
+commit messages: `<type>/<slug>`, e.g. `feat/vault-persist`,
+`fix/disk-fsync-race`, `chore/tasks-schema-bump`. Derive `<type>` from the
+task's `kind` (`bug` → `fix`, `feature` → `feat`, `chore` → `chore`,
+`research` → `docs`) and `<slug>` from the task id or a short kebab-case
+description.
+
+Procedure, once you're in the worktree:
+
+1. Implement the task per its `context` (see above) and every invariant in
+   `/CLAUDE.md` — the metaphor must stay real, `fsync` on every disk write,
+   no dual-axis charts, etc.
+2. Self-review before opening the PR: `cargo fmt`, `cargo clippy -D
+   warnings`, `cargo test`, and a real read-through of your own diff (the
+   `code-review` skill is appropriate here). Fix what you find — don't open a
+   PR you haven't reviewed.
+3. Commit with a Conventional Commits message (see `/CLAUDE.md`'s Git
+   section for the exact format rules).
+4. Push the branch and open the PR yourself: `git push -u origin <branch>`,
+   then `gh pr create` with a real title (Conventional Commits style) and a
+   description (Summary + Test plan, same shape as the PR-creation
+   instructions in the top-level system prompt).
+5. Monitor CI: `gh pr checks <branch> --watch` (or `gh run watch` on the run
+   it triggers). If a check fails, pull the failure log (`gh run view <id>
+   --log-failed`), fix the root cause in the worktree, commit, push, and
+   watch again. Repeat with no iteration cap until CI is green — don't stop
+   after one attempt and report back short of that, unless the failure turns
+   out to require a decision outside the task's stated scope (in which case
+   stop and ask, same as any other ambiguous blocker).
+6. Leave the PR open and unmerged for the user — merging is a shared-state,
+   hard-to-reverse action outside this workflow's scope even after CI is
+   green. Report the PR URL and the worktree path when you're done; don't
+   remove the worktree yourself.
+
+**This is a scoped exception to `/CLAUDE.md`'s "commit/push only on explicit
+request, each turn" rule** — it applies only inside this specific,
+explicitly-invoked workflow. It does not license committing or pushing for
+any other request, including plain "perform task X" done in the main
+checkout, which still follows the no-auto-commit rule above.
+
 ## What NOT to do
 
 - Don't hand-edit `migration/tasks.db` or `migration/schema.sql` outside

@@ -34,6 +34,11 @@ gaps to pick up next. Then the rest of `docs/` for the full spec:
 - **Commits happen only on explicit user request.** Making a change is not, by itself,
   a request to commit it. Batch unpushed work rather than committing reflexively after
   each edit.
+  - **Scoped exception:** when the user explicitly asks for a task to be worked "as a
+    background task" (worktree + PR + CI monitoring), follow
+    [`docs/11-background-agents-guide.md`](docs/11-background-agents-guide.md#when-told-to-work-a-task-as-a-background-task-worktree--pr--ci)
+    instead — that workflow commits, pushes, and opens the PR itself. It never applies
+    to a plain "perform task X" or unprompted edit; only to that explicit framing.
 - **Tags and releases happen only on an explicit trigger** — phrasing like "create a
   new release" or "create a new tag". Never tag or release as a side effect of
   finishing a feature, even a big one.
